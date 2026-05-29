@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: hotsearch-api
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: "3001"
+      - key: CACHE_TTL
+        value: "300"
+      - key: FETCH_INTERVAL
+        value: "300"
+      - key: REQUEST_TIMEOUT
+        value: "10000"
