@@ -4,3 +4,6 @@ dist/
 *.log
 .DS_Store
 DailyHotApi/
+*.jpg
+*.png
+*.jpeg

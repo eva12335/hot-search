@@ -16,7 +16,7 @@ const adapters: Record<string, PlatformAdapter> = {
 
 /** 是否为生产环境 */
 function isProduction(): boolean {
-  return process.env.NODE_ENV === "production";
+  return process.env.NODE_ENV !== "development";
 }
 interface ApiResponse {
   code: number;

@@ -14,3 +14,5 @@ services:
         value: "300"
       - key: REQUEST_TIMEOUT
         value: "10000"
+      - key: CORS_ORIGIN
+        value: "https://hot-search-rho.vercel.app"
