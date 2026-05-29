@@ -1,0 +1,12 @@
+{
+  "experimentalServices": {
+    "frontend": {
+      "root": "frontend",
+      "routePrefix": "/",
+      "framework": "vite"
+    }
+  },
+  "env": {
+    "VITE_API_URL": "https://hotsearch-api-gmhm.onrender.com/api"
+  }
+}
