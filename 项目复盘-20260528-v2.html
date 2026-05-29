@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>项目复盘 — 今日热搜 · 2026-05-28</title>
+<style>
+  :root {
+    --bg: #faf8f5;
+    --card: #fff;
+    --text: #2c2c2c;
+    --muted: #6b6b6b;
+    --border: #e8e4dd;
+    --accent: #b8744f;
+    --accent-light: #f5ede6;
+    --tag-bg: #f0ebe3;
+    --success: #5a8f5a;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.1);
+    --font: system-ui, -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+    --mono: "JetBrains Mono", "Cascadia Code", "Fira Code", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.75;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px;
+  }
+  h1 { font-size: 1.8em; margin-bottom: 4px; }
+  h2 { font-size: 1.3em; margin: 36px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--border); }
+  h3 { font-size: 1.1em; margin: 20px 0 8px; color: var(--accent); }
+  p { margin: 10px 0; }
+  .meta { color: var(--muted); font-size: 0.9em; margin-bottom: 24px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin: 16px 0;
+    box-shadow: var(--shadow);
+  }
+  .card h3 { margin-top: 0; }
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--accent);
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.82em;
+    margin-right: 6px;
+  }
+  .step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; height: 24px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 0.8em;
+    font-weight: 700;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 0.92em;
+  }
+  th, td {
+    padding: 8px 12px;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+  th { background: var(--accent-light); font-weight: 600; }
+  tr:nth-child(even) { background: #fafaf9; }
+  code {
+    background: var(--tag-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.88em;
+  }
+  pre {
+    background: #2c2c2c;
+    color: #e8e4dd;
+    padding: 16px;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.85em;
+    line-height: 1.6;
+    margin: 12px 0;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  .highlight { background: #fff9e6; border-left: 3px solid var(--accent); padding: 12px 16px; margin: 16px 0; border-radius: 0 var(--radius) var(--radius) 0; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  .tree { font-family: var(--mono); font-size: 0.85em; line-height: 1.8; white-space: pre; }
+  .flow-arrow { text-align: center; color: var(--accent); font-size: 1.2em; margin: 8px 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  @media print { body { padding: 20px 0; } .card { break-inside: avoid; } }
+</style>
+</head>
+<body>
+
+<h1>项目复盘 <span class="tag">V2 · 决策版</span></h1>
+<p class="meta">2026-05-27 ~ 2026-05-28 · 主题：热搜聚合看板 · 学习重点：Deep Research 方法论 + 项目文档全流程</p>
+
+<!-- ===== 第一部分：方法论 ===== -->
+<h2>一、学到的核心方法论</h2>
+
+<div class="card">
+<h3><span class="step-num">1</span> 用 AI 写提示词，再拿去 Deep Research</h3>
+<p>核心思路：不是自己对着 AI 随口问，而是先让一个 AI（比如我）帮你<strong>写一段结构化的深度调研提示词</strong>，再拿着这段提示词去至少两个网页端 AI 平台开启 Deep Research 功能。</p>
+<div class="highlight">
+<strong>关键公式</strong>：你描述需求 → AI A 帮你写提示词 → AI B + AI C 各自深度调研 → 两份报告交叉验证
+</div>
+</div>
+
+<div class="card">
+<h3><span class="step-num">2</span> 双平台交叉验证</h3>
+<p>单份报告可能存在偏见、遗漏或信息偏差。两份独立报告对照后：</p>
+<table>
+<tr><th>结论类型</th><th>判断方式</th><th>可信度</th></tr>
+<tr><td>高度一致</td><td>两份报告都说同样的事</td><td>高，可直接采信</td></tr>
+<tr><td>仅一方提及</td><td>只有一份报告覆盖</td><td>中，需手动验证</td></tr>
+<tr><td>存在矛盾</td><td>两份报告描述不同</td><td>低，必须亲自测试</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3><span class="step-num">3</span> 调研成果要分层输出</h3>
+<p>不同场景需要不同深度的文档：</p>
+<table>
+<tr><th>文档</th><th>用途</th><th>读者</th></tr>
+<tr><td>原始报告 × 2</td><td>存档留底</td><td>自己</td></tr>
+<tr><td>交叉比对报告</td><td>完整分析、决策依据</td><td>自己 + 技术伙伴</td></tr>
+<tr><td>精简总结</td><td>一页纸对外沟通</td><td>合作者、老板</td></tr>
+</table>
+</div>
+
+<!-- ===== 第二部分：实操过程 ===== -->
+<h2>二、实操过程回顾</h2>
+
+<div class="card">
+<h3>阶段 1：编写 Deep Research 提示词</h3>
+<p>调研目标是"聚合微博、知乎、百度三大平台热搜的开源架构方案"。提示词覆盖四个维度：</p>
+<ol>
+  <li><strong>现有开源项目</strong> — 在 GitHub 搜索可复用的项目</li>
+  <li><strong>API 与数据源分析</strong> — 各平台的接口路径、反爬策略、合规性</li>
+  <li><strong>架构参考</strong> — 定时轮询、时序存储、前端面板设计</li>
+  <li><strong>落地建议</strong> — 拿来即用的项目推荐、自建技术栈</li>
+</ol>
+<p class="meta">提示词先写英文版，用户要求改中文版 → 最终交付中文提示词</p>
+</div>
+
+<div class="card">
+<h3>阶段 2：两份报告回来了</h3>
+<p>一份来自 ChatGPT Deep Research，一份来自 Perplexity Pro。文件落地在 <code>Research/</code> 目录。</p>
+</div>
+
+<div class="card">
+<h3>阶段 3：交叉比对</h3>
+<p>将两份报告的结论分为三档：</p>
+<ul>
+  <li><span class="tag">高度一致</span> 7 条 — DailyHotApi 是首选、定时轮询是主流、PostgreSQL + Redis 存储等</li>
+  <li><span class="tag">部分一致</span> 6 条 — 需要手动验证 GitHub Star 数和活跃度</li>
+  <li><span class="tag">存在差异</span> 3 条 — 具体接口路径不同，需要实测</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>阶段 4：接口实测验证</h3>
+<p>克隆 DailyHotApi，安装依赖，启动服务，三个核心接口全部通过：</p>
+<table>
+<tr><th>接口</th><th>路径</th><th>数据量</th><th>结果</th></tr>
+<tr><td>微博热搜</td><td><code>GET /weibo</code></td><td>52 条</td><td>✅</td></tr>
+<tr><td>知乎热榜</td><td><code>GET /zhihu</code></td><td>30 条</td><td>✅</td></tr>
+<tr><td>百度热搜</td><td><code>GET /baidu</code></td><td>51 条</td><td>✅</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>阶段 5：五份文档产出</h3>
+<p>用"学全套"的方式，把一个商业项目的完整文档体系都做了一遍：</p>
+<table>
+<tr><th>文档</th><th>核心问题</th><th>关键内容</th></tr>
+<tr><td>README.md</td><td>这是什么项目？</td><td>功能、技术栈、快速开始、项目结构</td></tr>
+<tr><td>PRD.md</td><td>做什么功能？</td><td>P0/P1/P2 功能清单、非功能需求、范围边界、验收标准</td></tr>
+<tr><td>TECH_DESIGN.md</td><td>怎么实现？</td><td>架构图、DB 表设计、API 接口、组件树、部署方案</td></tr>
+<tr><td>AGENTS.md</td><td>AI 怎么配合？</td><td>技术栈、编码约定、常用命令、数据源参考</td></tr>
+<tr><td>Research/*</td><td>为什么是这个方案？</td><td>双平台报告、交叉比对、实测验证</td></tr>
+</table>
+</div>
+
+<!-- ===== 第三部分：关键决策 ===== -->
+<h2>三、关键决策记录</h2>
+
+<div class="card">
+<h3>技术选型决策链</h3>
+<div class="tree">
+调研 10+ 开源项目
+  → 两份报告共同推荐：DailyHotApi + next-daily-hot
+    → 实测 DailyHotApi 三个接口通过
+      → 决策：选方案 B，既然学就学个全的
+</div>
+</div>
+
+<div class="card">
+<h3>方案对比（决策：方案 B）</h3>
+<table>
+<tr><th></th><th>方案 A（极简）</th><th>方案 B（已选 ✅）</th></tr>
+<tr><td>上线时间</td><td>1-2 天</td><td>1-2 周</td></tr>
+<tr><td>数据层</td><td>直接用 DailyHotApi</td><td>自建 Python 适配器 + FastAPI</td></tr>
+<tr><td>存储</td><td>无</td><td>PostgreSQL + Redis</td></tr>
+<tr><td>前端</td><td>纯静态 HTML</td><td>Next.js + Tailwind + ECharts</td></tr>
+<tr><td>学习价值</td><td>低，只学前端</td><td>高，全栈打通</td></tr>
+</table>
+<p class="highlight"><strong>决策理由</strong>：既然学就学个全的。用方案 A 一天上线但学不到东西，方案 B 从采集层、API、数据库到前端全部自己过一遍，以后做任何项目都有底气。</p>
+</div>
+
+<div class="card">
+<h3>关于"学全套"的决策</h3>
+<p class="highlight">
+<strong>技术路线选方案 B 的理由</strong>：方案 A 一天上线但只学到了怎么调别人的 API。方案 B 从 Python 采集适配器、FastAPI 后端、PostgreSQL 数据库设计到 Next.js 前端，全栈打通，以后任何项目都能复用这套经验。<br><br>
+<strong>文档写五份的理由</strong>：一个人 + 学习项目，其实 README + AGENTS 够用。但既然学就学全的——先知道每份文档长什么样、解决什么问题，以后真实干项目了才能自己裁减。<br><br>
+<strong>核心原则</strong>：文档量 = f(团队规模, 项目周期, 合规要求)。不是学的每样东西都要每次都写。
+</p>
+</div>
+
+<!-- ===== 第四部分：产出清单 ===== -->
+<h2>四、项目文件清单</h2>
+
+<div class="tree">
+/home/eva/workspace/test/
+├── README.md                ← 项目概览
+├── PRD.md                   ← 产品需求文档
+├── TECH_DESIGN.md           ← 技术设计文档
+├── AGENTS.md                ← AI 协作指南
+├── CLAUDE.md                ← 项目 AI 指令（之前已有）
+├── 项目复盘-20260528.html   ← 本文件
+├── Research/
+│   ├── RESEARCH.md          ← 交叉比对完整版
+│   ├── SUMMARY.md           ← 对外精简版
+│   ├── deep-research-report.md
+│   └── 深度调研任务：聚合...md
+├── DailyHotApi/             ← 已验证可用的第三方数据 API
+└── 三体系进度管理.html       ← 之前的项目
+</div>
+
+<!-- ===== 第五部分：学习笔记 ===== -->
+<h2>五、学习要点提炼</h2>
+
+<div class="card">
+<h3>这次学到的</h3>
+<ol>
+  <li><strong>Deep Research 不是点一个按钮就行</strong> — 提示词质量决定报告质量。让 AI 帮你写提示词，比你随口描述效果好得多</li>
+  <li><strong>至少要两个 AI 平台交叉验证</strong> — 单一来源 = 盲信，两份对照 = 常识</li>
+  <li><strong>调研报告 ≠ 产品需求 ≠ 技术设计</strong> — 每份文档有明确的边界和受众</li>
+  <li><strong>先验证最核心的假设</strong> — 这个项目最核心的假设是"数据源能不能通"，5 分钟实测就比 5 小时写代码有价值</li>
+  <li><strong>文档是工具不是目的</strong> — 小项目少写、大项目多写、商业项目认真写。先有判断力，再裁剪</li>
+</ol>
+</div>
+
+<div class="card">
+<h3>下次做事的顺序</h3>
+<div class="tree">
+1. 让 AI 写 Deep Research 提示词
+2. 两个平台跑 → 拿两份报告
+3. 交叉比对 → 找最可靠的结论
+4. 实测关键假设（数据源/接口是否通）
+5. 决定方案 → 写精简版 README
+6. 开发 MVP → 上线验证
+7. 有人用了 → 再补 PRD / TECH_DESIGN / 合规文档
+</div>
+</div>
+
+<!-- ===== 第六部分：收尾修正与认知升级 ===== -->
+<h2>六、收尾修正：文档口径统一</h2>
+
+<div class="card">
+<h3>背景</h3>
+<p>复盘写完后发现 README、AGENTS、TECH_DESIGN 三份文档对方案 B 的表述不够一致——有的说"FastAPI 或 DailyHotApi"，有的保留了方案 A 的部署结构。需要统一为"方案 B 是主线，DailyHotApi 是参考实现"。</p>
+</div>
+
+<div class="card">
+<h3>修正清单</h3>
+<table>
+<tr><th>文件</th><th>原来</th><th>现在</th></tr>
+<tr><td>README.md</td><td>"FastAPI 或 DailyHotApi"</td><td>"FastAPI"，DailyHotApi 降为参考实现标注</td></tr>
+<tr><td>README.md</td><td>快速开始用 DailyHotApi</td><td>快速开始用自有后端 <code>uvicorn</code></td></tr>
+<tr><td>AGENTS.md</td><td>"FastAPI (Python) 或 DailyHotApi (Node.js)"</td><td>"FastAPI (Python)"</td></tr>
+<tr><td>AGENTS.md</td><td>"数据后端 (备选)"</td><td>"参考实现：DailyHotApi"</td></tr>
+<tr><td>TECH_DESIGN.md</td><td>"备选方案 A"</td><td>"降级方案（应急备用）"</td></tr>
+<tr><td>TECH_DESIGN.md</td><td>部署分 A/B 两个方案</td><td>只保留方案 B 的部署结构</td></tr>
+</table>
+<p class="highlight"><strong>原则</strong>：DailyHotApi 没删，定位为"参考实现 + 应急降级线路"，符合方案 B 的设计——每个平台保留两条数据线路。</p>
+</div>
+
+<!-- ===== 第七部分：认知升级 ===== -->
+<h2>七、关键认知：不会写代码 ≠ 可以省文档</h2>
+
+<div class="card">
+<h3>恰恰相反——代码能力越弱，文档越重要</h3>
+<table>
+<tr><th>会写代码的人</th><th>不会写代码的人</th></tr>
+<tr><td>需求没想清楚，写着写着也能试出来</td><td>需求没想清楚，AI 写出来的东西判断不了对不对</td></tr>
+<tr><td>可以不写 PRD，脑子里有谱</td><td>必须写 PRD，这是跟 AI 唯一的对齐方式</td></tr>
+<tr><td>代码自己会看，AGENTS.md 可以不写</td><td>必须写 AGENTS.md，这是给 AI 划的边界</td></tr>
+<tr><td>架构跑偏了能自己发现</td><td>架构跑偏了只能等浏览器里看到结果才知道</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>文档分层：哪些必须看懂、哪些不必</h3>
+<table>
+<tr><th>层级</th><th>文档</th><th>要求</th></tr>
+<tr><td>必须看懂</td><td>PRD.md / README.md / SUMMARY.md</td><td>全中文零代码，看不懂就是没想清楚</td></tr>
+<tr><td>看结论即可</td><td>RESEARCH.md</td><td>看"高度一致"表 + 推荐方案，中间对比是给 AI 看的</td></tr>
+<tr><td>不必看懂</td><td>TECH_DESIGN.md</td><td>代码/SQL/API 格式是 AI 的施工图，看架构图就行</td></tr>
+<tr><td>不必看懂</td><td>AGENTS.md</td><td>这是 AI 的"员工手册"，不是给人看的</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>类比</h3>
+<p class="highlight">你定几个房间、什么风格（PRD），施工图和材料清单（TECH_DESIGN）是工头看的。</p>
+</div>
+
+<!-- ===== 第八部分：目录整理 ===== -->
+<h2>八、项目目录整理</h2>
+
+<div class="card">
+<h3>整理前的问题</h3>
+<p>两个项目（三体系进度管理 + 今日热搜）的文件混在根目录，加上 DailyHotApi 克隆代码和 Windows 下载残留文件，根目录散落 15+ 个文件。</p>
+</div>
+
+<div class="card">
+<h3>整理后结构</h3>
+<div class="tree">
+/home/eva/workspace/test/
+├── .claude/                    # Claude 配置
+├── 三体系进度管理/              # 旧项目独立目录
+│   ├── CLAUDE.md
+│   ├── 三体系进度管理.html
+│   ├── 三体系认证准备资料清单-整理版.html
+│   ├── 准备资料.docx
+│   └── screenshots/
+│
+└── 今日热搜/                    # 新项目独立目录
+    ├── README.md
+    ├── PRD.md
+    ├── TECH_DESIGN.md
+    ├── AGENTS.md
+    ├── 项目复盘-20260528.html
+    ├── 项目复盘-20260528-v2.html
+    ├── Research/               # 调研报告（4 份）
+    └── DailyHotApi/            # 参考实现
+</div>
+</div>
+
+<hr class="divider">
+
+<p style="text-align:center; color: var(--muted); font-size: 0.9em;">
+由 Claude Code 会话内容整理生成 · 2026-05-28 · 会话产出：五份文档 + 两份复盘 + 接口验证 + 目录整理 · 仅供学习复盘使用
+</p>
+
+</body>
+</html>

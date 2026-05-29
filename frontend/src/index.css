@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@keyframes champion-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(2); opacity: 0.2; }
+}
+@keyframes blink-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes glow-breath {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.15); }
+}
+
+.animate-champion-pulse { animation: champion-pulse 1.5s ease-in-out infinite; }
+.animate-blink-dot      { animation: blink-dot 1.2s ease-in-out infinite; }
+.animate-fade-in-up     { animation: fade-in-up 0.5s ease-out both; }
+.animate-shimmer        { background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+.animate-gradient-shift { background-size: 200% 200%; animation: gradient-shift 4s ease infinite; }
+.animate-glow-breath    { animation: glow-breath 3s ease-in-out infinite; }
+
+.perspective-1000       { perspective: 1000px; }
