@@ -14,7 +14,10 @@ const adapters: Record<string, PlatformAdapter> = {
   baidu: baiduAdapter,
 };
 
-/** 统一响应结构 */
+/** 是否为生产环境 */
+function isProduction(): boolean {
+  return process.env.NODE_ENV === "production";
+}
 interface ApiResponse {
   code: number;
   platform: string;
@@ -81,7 +84,11 @@ router.get("/all", async (_req, res) => {
     cache.set("hot:all", all);
     res.json(all);
   } catch (e: any) {
-    res.status(500).json({ code: 500, message: e.message });
+    console.error("[hot:all] 采集失败:", e.message);
+    res.status(500).json({
+      code: 500,
+      message: isProduction() ? "服务繁忙，请稍后重试" : e.message,
+    });
   }
 });
 
