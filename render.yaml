@@ -15,4 +15,13 @@ services:
       - key: REQUEST_TIMEOUT
         value: "10000"
       - key: CORS_ORIGIN
-        value: "https://hot-search-rho.vercel.app"
+        value: "https://hotsearch.onrender.com,https://hot-search-rho.vercel.app"
+
+  - type: static
+    name: hotsearch
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        value: "https://hotsearch-api-gmhm.onrender.com/api"
