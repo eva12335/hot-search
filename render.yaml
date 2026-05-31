@@ -23,7 +23,7 @@ services:
       - key: NODE_ENV
         value: "production"
       - key: CORS_ORIGIN
-        value: "https://hotsearch.onrender.com,https://hot-search-rho.vercel.app"
+        value: "https://hotsearch.onrender.com,https://hotsearch-app.onrender.com,https://hot-search-rho.vercel.app"
 
   - type: static
     name: hotsearch
