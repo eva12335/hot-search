@@ -69,23 +69,18 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 });
 
 // 启动服务
-console.log("[server] 启动中... PORT=" + PORT);
-
 try {
   initDB();
-  console.log("[server] DB 初始化完成");
 } catch (e: any) {
-  console.error("[server] DB 初始化失败:", e.message, e.stack);
+  console.error("[server] DB 初始化失败:", e.message);
 }
 
 try {
   startCron(FETCH_INTERVAL);
-  console.log("[server] Cron 启动完成");
 } catch (e: any) {
-  console.error("[server] Cron 启动失败:", e.message, e.stack);
+  console.error("[server] Cron 启动失败:", e.message);
 }
 
 app.listen(PORT, () => {
   console.log(`[server] 今日热搜 API 已启动: http://localhost:${PORT}`);
 });
-console.log("[server] app.listen 调用成功，等待端口绑定...");

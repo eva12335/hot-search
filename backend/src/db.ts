@@ -1,4 +1,5 @@
 import Database from "better-sqlite3";
+import { mkdirSync } from "fs";
 import path from "path";
 import type { HotItem } from "./adapters/weibo.js";
 
@@ -12,8 +13,7 @@ const PLATFORMS = ["weibo", "zhihu", "bilibili", "huggingface", "github"];
 /** 初始化数据库，创建表和索引 */
 export function initDB(): void {
   const dir = path.dirname(DB_PATH);
-  // better-sqlite3 自动创建目录需要手动确保
-  import("fs").then((fs) => fs.mkdirSync(dir, { recursive: true }));
+  mkdirSync(dir, { recursive: true });
 
   db = new Database(DB_PATH);
   db.pragma("journal_mode = WAL");
