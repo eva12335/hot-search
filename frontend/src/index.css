@@ -5,9 +5,9 @@
   --bg-deep: #060b1a;
   --bg-layer1: #0a1228;
   --bg-layer2: #0f1a33;
-  --glass-bg: rgba(15, 26, 51, 0.55);
-  --glass-border: rgba(201, 169, 110, 0.18);
-  --glass-highlight: rgba(201, 169, 110, 0.08);
+  --glass-bg: rgba(15, 26, 51, 0.42);
+  --glass-border: rgba(201, 169, 110, 0.22);
+  --glass-highlight: rgba(201, 169, 110, 0.12);
   --gold: #c9a96e;
   --gold-bright: #e0c88c;
   --gold-dim: #a88d54;
@@ -15,15 +15,15 @@
   --text-secondary: #9a9790;
   --text-muted: #5c5a55;
   --weibo: #f97316;
-  --weibo-glow: rgba(249, 115, 22, 0.25);
+  --weibo-glow: rgba(249, 115, 22, 0.35);
   --zhihu: #6366f1;
-  --zhihu-glow: rgba(99, 102, 241, 0.25);
+  --zhihu-glow: rgba(99, 102, 241, 0.35);
   --bilibili: #ec4899;
-  --bilibili-glow: rgba(236, 72, 153, 0.25);
+  --bilibili-glow: rgba(236, 72, 153, 0.35);
   --huggingface: #ffbd59;
-  --huggingface-glow: rgba(255, 189, 89, 0.25);
+  --huggingface-glow: rgba(255, 189, 89, 0.35);
   --github: #8b949e;
-  --github-glow: rgba(139, 148, 158, 0.25);
+  --github-glow: rgba(139, 148, 158, 0.35);
   --up: #4ade80;
   --down: #f87171;
   --same: #5c5a55;
@@ -50,27 +50,34 @@ body {
 .starfield {
   position: fixed; inset: 0; pointer-events: none; z-index: 0;
   background:
-    radial-gradient(1px 1px at 10% 15%, rgba(201,169,110,0.4), transparent),
-    radial-gradient(1px 1px at 25% 35%, rgba(255,255,255,0.3), transparent),
-    radial-gradient(1.5px 1.5px at 40% 10%, rgba(201,169,110,0.35), transparent),
-    radial-gradient(1px 1px at 55% 45%, rgba(255,255,255,0.25), transparent),
-    radial-gradient(2px 2px at 70% 20%, rgba(201,169,110,0.3), transparent),
-    radial-gradient(1px 1px at 85% 50%, rgba(255,255,255,0.3), transparent),
-    radial-gradient(1.5px 1.5px at 15% 60%, rgba(255,255,255,0.2), transparent),
-    radial-gradient(1px 1px at 60% 70%, rgba(201,169,110,0.25), transparent),
-    radial-gradient(1px 1px at 90% 75%, rgba(255,255,255,0.2), transparent),
-    radial-gradient(1.5px 1.5px at 35% 80%, rgba(201,169,110,0.3), transparent),
-    radial-gradient(1px 1px at 75% 85%, rgba(255,255,255,0.25), transparent),
-    radial-gradient(1px 1px at 50% 55%, rgba(255,255,255,0.3), transparent),
-    radial-gradient(1px 1px at 20% 90%, rgba(255,255,255,0.2), transparent),
-    radial-gradient(2px 2px at 80% 30%, rgba(201,169,110,0.2), transparent),
-    radial-gradient(1px 1px at 45% 92%, rgba(255,255,255,0.15), transparent);
+    radial-gradient(1px 1px at 10% 15%, rgba(201,169,110,0.5), transparent),
+    radial-gradient(1px 1px at 25% 35%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1.5px 1.5px at 40% 10%, rgba(201,169,110,0.45), transparent),
+    radial-gradient(1px 1px at 55% 45%, rgba(255,255,255,0.35), transparent),
+    radial-gradient(2px 2px at 70% 20%, rgba(201,169,110,0.4), transparent),
+    radial-gradient(1px 1px at 85% 50%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1.5px 1.5px at 15% 60%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 60% 70%, rgba(201,169,110,0.35), transparent),
+    radial-gradient(1px 1px at 90% 75%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1.5px 1.5px at 35% 80%, rgba(201,169,110,0.4), transparent),
+    radial-gradient(1px 1px at 75% 85%, rgba(255,255,255,0.35), transparent),
+    radial-gradient(1px 1px at 50% 55%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 20% 90%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(2px 2px at 80% 30%, rgba(201,169,110,0.3), transparent),
+    radial-gradient(1px 1px at 45% 92%, rgba(255,255,255,0.25), transparent),
+    radial-gradient(1.5px 1.5px at 5% 5%, rgba(201,169,110,0.3), transparent),
+    radial-gradient(1px 1px at 30% 25%, rgba(255,255,255,0.25), transparent),
+    radial-gradient(1px 1px at 65% 8%, rgba(201,169,110,0.25), transparent),
+    radial-gradient(2px 2px at 95% 12%, rgba(255,255,255,0.2), transparent),
+    radial-gradient(1px 1px at 8% 72%, rgba(255,255,255,0.2), transparent),
+    radial-gradient(1.5px 1.5px at 58% 95%, rgba(201,169,110,0.2), transparent),
+    radial-gradient(1px 1px at 92% 65%, rgba(255,255,255,0.2), transparent);
 }
 
 /* 星云 */
 .nebula {
   position: fixed; pointer-events: none; z-index: 0;
-  border-radius: 50%; filter: blur(120px); opacity: 0.12;
+  border-radius: 50%; filter: blur(120px); opacity: 0.16;
 }
 .nebula-1 { width: 600px; height: 600px; top: -200px; left: -150px; background: var(--weibo); }
 .nebula-2 { width: 500px; height: 500px; bottom: -180px; right: -120px; background: var(--bilibili); }
@@ -103,7 +110,7 @@ body {
   box-shadow:
     0 4px 24px rgba(0,0,0,0.3),
     0 1px 3px rgba(0,0,0,0.2),
-    inset 0 1px 0 rgba(255,255,255,0.04);
+    inset 0 1px 0 rgba(255,255,255,0.06);
 }
 /* 顶部边光 */
 .glass-card::before {
@@ -119,7 +126,7 @@ body {
     0 24px 48px rgba(0,0,0,0.45),
     0 6px 16px rgba(0,0,0,0.3),
     0 0 0 1px var(--glass-border),
-    inset 0 1px 0 rgba(255,255,255,0.06);
+    inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .glass-card:hover::before { opacity: 1.5; }
 
@@ -260,7 +267,7 @@ body {
   color: var(--text-primary); letter-spacing: 0.02em;
 }
 .card-title span {
-  font-size: 0.7rem; color: var(--text-muted);
+  font-size: 0.72rem; color: var(--text-secondary);
   text-transform: uppercase; letter-spacing: 0.1em;
 }
 .card-body { position: relative; z-index: 2; padding: 0 6px 6px; }
@@ -298,21 +305,22 @@ body {
 /* 热度分数 */
 .item-hot {
   flex-shrink: 0;
-  font-size: 0.7rem; font-family: var(--font-mono);
-  color: var(--text-muted);
+  font-size: 0.8rem; font-family: var(--font-mono);
+  color: #c5b99b;
   font-variant-numeric: tabular-nums;
-  min-width: 44px; text-align: right;
+  min-width: 54px; text-align: right;
 }
 
 /* delta 指示器 */
 .rank-delta {
-  flex-shrink: 0; width: 20px; text-align: center;
-  font-size: 0.7rem; font-weight: 700;
+  flex-shrink: 0; width: 22px; text-align: center;
+  font-size: 0.95rem; font-weight: 700;
+  line-height: 1;
 }
-.delta-up    { color: var(--up); }
-.delta-down  { color: var(--down); }
-.delta-same  { color: var(--same); }
-.delta-new   { color: var(--new); }
+.delta-up    { color: #4ade80; }
+.delta-down  { color: #f87171; }
+.delta-same  { color: #9e9a92; }
+.delta-new   { color: #fbbf24; }
 
 /* ===== 趋势图弹窗（对齐样板间） ===== */
 .trend-overlay {
@@ -387,11 +395,11 @@ body {
 
 /* ===== 卡片更新时间 ===== */
 .card-time {
-  font-size: 0.7rem; color: var(--text-muted);
+  font-size: 0.72rem; color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
   padding: 4px 10px; border-radius: 999px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
 }
 
 /* ===== 全局降级横幅 ===== */

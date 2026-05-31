@@ -39,7 +39,7 @@ async function weiboPrimary(): Promise<HotItem[]> {
     rank: i + 1,
     title: v.word || v.word_scheme || `热搜${i + 1}`,
     hot: v.num ?? null,
-    url: `https://s.weibo.com/weibo?q=${encodeURIComponent(v.word || v.word_scheme || "")}`,
+    url: `https://weibo.com/search?q=${encodeURIComponent(v.word || v.word_scheme || "")}`,
     desc: v.word_scheme || "",
   }));
   return filterAI(items);

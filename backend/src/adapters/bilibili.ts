@@ -15,12 +15,12 @@ const MIXIN_KEY_ENC_TAB = [
 ];
 
 /** 对 img_key + sub_key 混排取前 32 位 */
-function getMixinKey(orig: string): string {
+export function getMixinKey(orig: string): string {
   return MIXIN_KEY_ENC_TAB.map((n) => orig[n]).join("").slice(0, 32);
 }
 
 /** WBI 签名：排序参数 + md5(query + mixin_key) */
-function encWbi(params: Record<string, string | number>, imgKey: string, subKey: string): string {
+export function encWbi(params: Record<string, string | number>, imgKey: string, subKey: string): string {
   const mixinKey = getMixinKey(imgKey + subKey);
   const wts = Math.round(Date.now() / 1000);
   Object.assign(params, { wts });

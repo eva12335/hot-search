@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { PlatformResponse, HotItem as HotItemType } from "../lib/types";
 import HotItem from "./HotItem";
@@ -70,6 +70,7 @@ export default function HotCard({ platformData, state }: HotCardProps) {
   const platform = platformData?.platform;
   const c = getConfig(platform);
   const [trendItem, setTrendItem] = useState<HotItemType | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   if (state === "loading") return <SkeletonCard />;
   if (state === "error" && !platformData?.data?.length) {
@@ -84,7 +85,15 @@ export default function HotCard({ platformData, state }: HotCardProps) {
 
   return (
     <>
-      <div className="glass-card">
+      <div
+        className="glass-card"
+        ref={cardRef}
+        onMouseEnter={() => cardRef.current?.setAttribute("data-hovered", "")}
+        onMouseLeave={() => {
+          cardRef.current?.removeAttribute("data-hovered");
+          if (cardRef.current) cardRef.current.style.boxShadow = "";
+        }}
+      >
         <div className="card-header">
           <div className="card-platform">
             <div className={`card-icon ${c.iconClass}`}>{c.icon}</div>

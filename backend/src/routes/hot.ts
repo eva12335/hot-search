@@ -2,11 +2,25 @@ import { Router } from "express";
 import { weiboAdapter } from "../adapters/weibo.js";
 import { zhihuAdapter } from "../adapters/zhihu.js";
 import { bilibiliAdapter } from "../adapters/bilibili.js";
-import { huggingfaceAdapter, MOCK_DATA as HF_MOCK } from "../adapters/huggingface.js";
+import { huggingfaceAdapter } from "../adapters/huggingface.js";
 import { githubTrendingAdapter } from "../adapters/github-trending.js";
 import type { PlatformAdapter, HotItem } from "../adapters/weibo.js";
 import { getCache, setCache, dataState } from "../cache.js";
 import { getLatestSnapshot, getHistory } from "../db.js";
+
+/** 对比上一轮数据，计算排名变化 delta */
+export function computeDelta(prevData: HotItem[] | undefined, current: HotItem[]): HotItem[] {
+  if (!prevData || prevData.length === 0) {
+    return current.map((item) => ({ ...item, delta: "new" as const }));
+  }
+  const prevMap = new Map(prevData.map((item) => [item.title, item.rank]));
+  return current.map((item) => {
+    const prevRank = prevMap.get(item.title);
+    if (prevRank === undefined) return { ...item, delta: "new" as const };
+    if (prevRank === item.rank) return { ...item, delta: "same" as const };
+    return { ...item, delta: prevRank > item.rank ? "up" as const : "down" as const };
+  });
+}
 
 const router = Router();
 
@@ -36,7 +50,7 @@ interface PlatformResponse {
 }
 
 /** 构建 V2 响应 */
-function buildResponse(
+export function buildResponse(
   adapter: PlatformAdapter,
   data: HotItem[],
   success: boolean,
@@ -56,45 +70,56 @@ function buildResponse(
   };
 }
 
-/** 五级降级链：采集单平台数据 */
+/** 跑一个异步任务，超时返回 null（不取消底层请求） */
+async function withDeadline<T>(fn: () => Promise<T>, ms: number): Promise<T | null> {
+  try {
+    const result = await Promise.race([
+      fn(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+    ]);
+    return result;
+  } catch (e: any) {
+    console.warn("[withDeadline] 请求异常:", e.message || e);
+    return null;
+  }
+}
+
+/** API 路由用：缓存优先，仅在过期时才远端拉取 */
 export async function fetchPlatform(
   adapter: PlatformAdapter
 ): Promise<PlatformResponse> {
   const cacheKey = `hot:${adapter.meta.platformName}`;
+  const DEADLINE = 6000;
 
-  // 1. 主线路
-  try {
-    const data = await adapter.fetch();
-    if (data.length > 0) {
-      setCache(cacheKey, data);
-      return buildResponse(adapter, data, true, false, new Date().toISOString());
-    }
-  } catch (e: any) {
-    console.warn(`[${adapter.meta.platformName}] 主线路失败: ${e.message}`);
-  }
-
-  // 2. 备用线路
-  try {
-    const data = await adapter.fallbackFetch();
-    if (data.length > 0) {
-      setCache(cacheKey, data);
-      return buildResponse(adapter, data, true, false, new Date().toISOString());
-    }
-  } catch (e: any) {
-    console.warn(`[${adapter.meta.platformName}] 备用线路失败: ${e.message}`);
-  }
-
-  // 3. NodeCache（可能 stale）
+  // 缓存新鲜（<10min）→ 直接返回，毫秒级响应
   const cached = getCache(cacheKey);
+  if (cached && dataState(cached) === "fresh") {
+    return buildResponse(adapter, cached.data, true, false, new Date(cached.fetchedAt).toISOString());
+  }
+
+  // 缓存过期或不存在 → 去远端拉取
+  // 1. 主线路（带截止时间）
+  const primaryData = await withDeadline(() => adapter.fetch(), DEADLINE);
+  if (primaryData && primaryData.length > 0) {
+    const prevEntry = getCache(cacheKey);
+    const withDelta = computeDelta(prevEntry?.data, primaryData);
+    setCache(cacheKey, withDelta);
+    return buildResponse(adapter, withDelta, true, false, new Date().toISOString());
+  }
+
+  // 2. 备用线路（带截止时间）
+  const fallbackData = await withDeadline(() => adapter.fallbackFetch(), DEADLINE);
+  if (fallbackData && fallbackData.length > 0) {
+    const prevEntry = getCache(cacheKey);
+    const withDelta = computeDelta(prevEntry?.data, fallbackData);
+    setCache(cacheKey, withDelta);
+    return buildResponse(adapter, withDelta, true, false, new Date().toISOString());
+  }
+
+  // 3. 有旧缓存（stale 但仍可用）
   if (cached && dataState(cached) !== "invalid") {
-    const stale = dataState(cached) === "stale";
-    return buildResponse(
-      adapter,
-      cached.data,
-      true,
-      stale,
-      stale ? new Date(cached.fetchedAt).toISOString() : new Date().toISOString()
-    );
+    return buildResponse(adapter, cached.data, true, true,
+      new Date(cached.fetchedAt).toISOString());
   }
 
   // 4. SQLite 历史快照
@@ -103,14 +128,40 @@ export async function fetchPlatform(
     return buildResponse(adapter, snapshot, true, true, null);
   }
 
-  // 5. 开发环境 mock 数据（HuggingFace 国内不可用）
-  if (!isProduction() && adapter.meta.platformName === "huggingface") {
-    console.warn(`[${adapter.meta.platformName}] 使用本地 mock 数据`);
-    return buildResponse(adapter, HF_MOCK, true, false, new Date().toISOString());
+  // 5. 空数据
+  return buildResponse(adapter, [], false, false, null, "暂无数据");
+}
+
+/** cron 用：强制远端拉取，不走缓存 */
+export async function fetchPlatformForce(
+  adapter: PlatformAdapter
+): Promise<PlatformResponse> {
+  const cacheKey = `hot:${adapter.meta.platformName}`;
+  const DEADLINE = 8000;
+
+  const primaryData = await withDeadline(() => adapter.fetch(), DEADLINE);
+  if (primaryData && primaryData.length > 0) {
+    const prevEntry = getCache(cacheKey);
+    const withDelta = computeDelta(prevEntry?.data, primaryData);
+    setCache(cacheKey, withDelta);
+    return buildResponse(adapter, withDelta, true, false, new Date().toISOString());
   }
 
-  // 6. 空数据
-  return buildResponse(adapter, [], false, false, null, "主备线路均不可用，且无历史快照");
+  const fallbackData = await withDeadline(() => adapter.fallbackFetch(), DEADLINE);
+  if (fallbackData && fallbackData.length > 0) {
+    const prevEntry = getCache(cacheKey);
+    const withDelta = computeDelta(prevEntry?.data, fallbackData);
+    setCache(cacheKey, withDelta);
+    return buildResponse(adapter, withDelta, true, false, new Date().toISOString());
+  }
+
+  const cached = getCache(cacheKey);
+  if (cached && dataState(cached) !== "invalid") {
+    return buildResponse(adapter, cached.data, true, true,
+      new Date(cached.fetchedAt).toISOString());
+  }
+
+  return buildResponse(adapter, [], false, false, null, "暂无数据");
 }
 
 /** GET /api/hot/all — 返回所有平台数据 */
@@ -182,11 +233,11 @@ router.get("/:platform/history", async (req, res) => {
   });
 });
 
-/** 刷新所有平台数据到缓存（cron 调用） */
+/** 刷新所有平台数据到缓存（cron 调用，强制远端拉取） */
 export async function refreshAll(): Promise<void> {
   console.log("[cron] 开始刷新...");
   const results = await Promise.all(
-    Object.values(adapters).map(fetchPlatform)
+    Object.values(adapters).map(fetchPlatformForce)
   );
   let successCount = 0;
   for (const r of results) {

@@ -1,5 +1,6 @@
 import type { HotItem as HotItemType } from "../lib/types";
 import { formatHotScore } from "../lib/format";
+import { rankBadgeClass } from "../lib/badge";
 
 const DELTA_LABELS: Record<string, string> = {
   up: "↑",
@@ -18,13 +19,6 @@ interface HotItemProps {
   item: HotItemType;
   index: number;
   onClick: (item: HotItemType) => void;
-}
-
-function rankBadgeClass(rank: number): string {
-  if (rank === 1) return "top1";
-  if (rank === 2) return "top2";
-  if (rank === 3) return "top3";
-  return "";
 }
 
 export default function HotItem({ item, index, onClick }: HotItemProps) {

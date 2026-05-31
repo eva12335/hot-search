@@ -7,7 +7,36 @@ import HotCard from "./components/HotCard";
 import TabBar from "./components/TabBar";
 import type { TabFilter } from "./components/TabBar";
 import { fetchAllHot, fetchHealth } from "./lib/api";
-import type { AllPlatformsData, PlatformResponse } from "./lib/types";
+import { cardState } from "./lib/state";
+import type { AllPlatformsData } from "./lib/types";
+
+/** 全局 3D 视差：所有卡片随鼠标位置倾斜（对齐样板间算法） */
+function applyGlobalParallax(e: MouseEvent) {
+  const cards = document.querySelectorAll<HTMLElement>(".glass-card");
+  cards.forEach((card) => {
+    const rect = card.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = (e.clientX - cx) / (window.innerWidth / 2);
+    const dy = (e.clientY - cy) / (window.innerHeight / 2);
+    const rotY = dx * 4;
+    const rotX = dy * -5;
+    const hovered = card.hasAttribute("data-hovered");
+    const lift = hovered ? -14 : -6;
+    card.style.transform = `translateY(${lift}px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+    card.style.boxShadow = hovered
+      ? "0 24px 48px rgba(0,0,0,0.45), 0 6px 16px rgba(0,0,0,0.3), 0 0 0 1px var(--glass-border), inset 0 1px 0 rgba(255,255,255,0.08)"
+      : "";
+  });
+}
+
+function resetGlobalParallax() {
+  const cards = document.querySelectorAll<HTMLElement>(".glass-card");
+  cards.forEach((card) => {
+    card.style.transform = "";
+    card.style.boxShadow = "";
+  });
+}
 
 /** 5 平台顺序 + 分类 */
 const PLATFORM_ORDER = ["weibo", "zhihu", "bilibili", "huggingface", "github"];
@@ -27,16 +56,6 @@ function getLatestUpdate(data: AllPlatformsData): string {
   return latest;
 }
 
-function cardState(resp: PlatformResponse | undefined, isLoading: boolean): "loading" | "error" | "empty" | "success" | "stale" {
-  if (isLoading && !resp) return "loading";
-  if (!resp) return "loading";
-  if (!resp.success && !resp.data?.length) return "error";
-  if (resp.success && resp.stale) return "stale";
-  if (resp.success && resp.data?.length > 0) return "success";
-  if (!resp.success) return "error";
-  return "empty";
-}
-
 export default function App() {
   const [tab, setTab] = useState<TabFilter>("all");
 
@@ -44,6 +63,16 @@ export default function App() {
     refreshInterval: Number(import.meta.env.VITE_REFRESH_INTERVAL) || 180000,
     keepPreviousData: true,
   });
+
+  // 全局 3D 视差（对齐样板间）
+  useEffect(() => {
+    document.addEventListener("mousemove", applyGlobalParallax, { passive: true });
+    document.addEventListener("mouseleave", resetGlobalParallax);
+    return () => {
+      document.removeEventListener("mousemove", applyGlobalParallax);
+      document.removeEventListener("mouseleave", resetGlobalParallax);
+    };
+  }, []);
 
   // 心跳保活：每 2 分钟请求 /api/health
   useEffect(() => {
