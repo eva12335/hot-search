@@ -5,12 +5,13 @@ import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import hotRouter from "./routes/hot.js";
 import { startCron } from "./cron.js";
+import { initDB } from "./db.js";
 
 dotenv.config();
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3001", 10);
-const FETCH_INTERVAL = parseInt(process.env.FETCH_INTERVAL || "300", 10) * 1000;
+const FETCH_INTERVAL = parseInt(process.env.FETCH_INTERVAL || "600", 10) * 1000;
 
 // Render 反向代理后正确识别客户端 IP（限流和日志依赖）
 app.set("trust proxy", 1);
@@ -70,5 +71,6 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 // 启动服务
 app.listen(PORT, () => {
   console.log(`[server] 今日热搜 API 已启动: http://localhost:${PORT}`);
+  initDB();
   startCron(FETCH_INTERVAL);
 });

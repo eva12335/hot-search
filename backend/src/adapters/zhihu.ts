@@ -1,5 +1,6 @@
 import axios from "axios";
 import type { HotItem, PlatformAdapter } from "./weibo.js";
+import { filterAI } from "./filter.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -18,7 +19,7 @@ async function zhihuPrimary(): Promise<HotItem[]> {
     { headers }
   );
   const list: any[] = data?.data ?? [];
-  return list.map((v, i) => {
+  const items = list.map((v, i) => {
     const target = v.target;
     // 解析 detail_text 中的热度数值，如 "1234 万热度" -> 12340000
     const hotStr: string = v.detail_text || "";
@@ -35,6 +36,7 @@ async function zhihuPrimary(): Promise<HotItem[]> {
       desc: target.excerpt || "",
     };
   });
+  return filterAI(items);
 }
 
 /** 知乎备用线，HTML 页面解析（脆弱但聊胜于无） */
@@ -59,14 +61,14 @@ async function zhihuFallback(): Promise<HotItem[]> {
       });
     }
   });
-  return items.slice(0, 50);
+  return filterAI(items.slice(0, 50));
 }
 
 export const zhihuAdapter: PlatformAdapter = {
   meta: {
     platformName: "zhihu",
     displayName: "知乎",
-    typeLabel: "热榜",
+    typeLabel: "AI 热搜",
     sourceUrl: "https://www.zhihu.com/hot",
   },
   fetch: zhihuPrimary,

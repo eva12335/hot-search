@@ -1,36 +1,211 @@
 @import "tailwindcss";
 
-@keyframes champion-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(2); opacity: 0.2; }
+/* ===== V2 暗色主题 CSS 变量 ===== */
+:root {
+  --bg-deep: #060b1a;
+  --bg-layer1: #0a1228;
+  --bg-layer2: #0f1a33;
+  --glass-bg: rgba(15, 26, 51, 0.55);
+  --glass-border: rgba(201, 169, 110, 0.18);
+  --gold: #c9a96e;
+  --gold-bright: #e0c88c;
+  --gold-dim: #a88d54;
+  --text-primary: #e8e4dd;
+  --text-secondary: #9a9790;
+  --text-muted: #5c5a55;
+  --weibo: #f97316;
+  --zhihu: #6366f1;
+  --bilibili: #ec4899;
+  --huggingface: #ffbd59;
+  --github: #8b949e;
+  --up: #4ade80;
+  --down: #f87171;
+  --same: #5c5a55;
+  --new: #fbbf24;
 }
-@keyframes blink-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.2; }
+
+/* ===== 全局基础 ===== */
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
+  margin: 0;
+  min-height: 100vh;
 }
+
+/* ===== 星空背景 ===== */
+.starfield {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(1px 1px at 10% 15%, rgba(232, 228, 221, 0.6), transparent),
+    radial-gradient(1px 1px at 25% 45%, rgba(201, 169, 110, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 40% 25%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1px 1px at 55% 60%, rgba(232, 228, 221, 0.5), transparent),
+    radial-gradient(1px 1px at 70% 35%, rgba(201, 169, 110, 0.4), transparent),
+    radial-gradient(1.5px 1.5px at 85% 55%, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1px 1px at 15% 75%, rgba(232, 228, 221, 0.5), transparent),
+    radial-gradient(1px 1px at 60% 80%, rgba(201, 169, 110, 0.4), transparent),
+    radial-gradient(1.5px 1.5px at 90% 15%, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(2px 2px at 35% 70%, rgba(99, 102, 241, 0.25), transparent),
+    radial-gradient(1px 1px at 50% 10%, rgba(236, 72, 153, 0.2), transparent);
+}
+
+/* 星云：3 个模糊圆形 */
+.nebula {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.12;
+}
+.nebula-1 { width: 600px; height: 600px; top: -200px; left: -100px; background: #f97316; }
+.nebula-2 { width: 600px; height: 600px; bottom: -200px; right: -100px; background: #ec4899; }
+.nebula-3 { width: 500px; height: 500px; top: 40%; left: 40%; background: #6366f1; opacity: 0.08; }
+
+/* 扫描线 */
+.scanline {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}
+
+/* ===== 玻璃拟态卡片 ===== */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  overflow: hidden;
+}
+.glass-card:hover {
+  border-color: rgba(201, 169, 110, 0.35);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(201, 169, 110, 0.15);
+}
+
+/* ===== 平台色头部 ===== */
+.card-header-weibo     { background: linear-gradient(135deg, rgba(249,115,22,0.3), rgba(249,115,22,0.1)); }
+.card-header-zhihu     { background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(99,102,241,0.1)); }
+.card-header-bilibili  { background: linear-gradient(135deg, rgba(236,72,153,0.3), rgba(236,72,153,0.1)); }
+.card-header-huggingface { background: linear-gradient(135deg, rgba(255,189,89,0.3), rgba(255,189,89,0.1)); }
+.card-header-github    { background: linear-gradient(135deg, rgba(139,148,158,0.3), rgba(139,148,158,0.1)); }
+
+/* ===== Tab 胶囊 ===== */
+.tab-capsule {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 4px;
+  display: inline-flex;
+  gap: 2px;
+}
+.tab-btn {
+  border-radius: 999px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active {
+  background: rgba(201, 169, 110, 0.15);
+  color: var(--gold-bright);
+  box-shadow: 0 0 12px rgba(201, 169, 110, 0.15);
+}
+
+/* ===== 3D 视差 ===== */
+.perspective-1200 { perspective: 1200px; }
+
+/* ===== 骨架屏 ===== */
+@keyframes shimmer-dark {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+  100% { opacity: 0.3; }
+}
+.skeleton-block {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  animation: shimmer-dark 1.5s infinite;
+}
+
+/* ===== 趋势图弹窗 ===== */
+.trend-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 11, 26, 0.7);
+  backdrop-filter: blur(8px);
+}
+.trend-dialog {
+  background: var(--bg-layer1);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  max-width: 680px;
+  width: 90vw;
+  padding: 24px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+
+/* ===== 排名徽章 ===== */
+.rank-1 {
+  background: linear-gradient(135deg, #c9a96e, #e0c88c);
+  color: #060b1a;
+  box-shadow: 0 0 16px rgba(201, 169, 110, 0.4);
+  font-weight: 900;
+}
+.rank-2 {
+  background: linear-gradient(135deg, #a0a0a0, #c0c0c0);
+  color: #060b1a;
+  font-weight: 800;
+}
+.rank-3 {
+  background: linear-gradient(135deg, #b87351, #cd8b6a);
+  color: #060b1a;
+  font-weight: 800;
+}
+
+/* ===== delta 指示器 ===== */
+.delta-up    { color: var(--up); }
+.delta-down  { color: var(--down); }
+.delta-same  { color: var(--same); }
+.delta-new   { color: var(--new); }
+
+/* ===== 全局降级横幅 ===== */
+.degraded-banner {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  color: var(--new);
+  text-align: center;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* ===== 保留原有动画 ===== */
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out both;
 }
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-@keyframes glow-breath {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.15); }
-}
-
-.animate-champion-pulse { animation: champion-pulse 1.5s ease-in-out infinite; }
-.animate-blink-dot      { animation: blink-dot 1.2s ease-in-out infinite; }
-.animate-fade-in-up     { animation: fade-in-up 0.5s ease-out both; }
-.animate-shimmer        { background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
-.animate-gradient-shift { background-size: 200% 200%; animation: gradient-shift 4s ease infinite; }
-.animate-glow-breath    { animation: glow-breath 3s ease-in-out infinite; }
-
-.perspective-1000       { perspective: 1000px; }

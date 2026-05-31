@@ -1,9 +1,12 @@
 import { Router } from "express";
 import { weiboAdapter } from "../adapters/weibo.js";
 import { zhihuAdapter } from "../adapters/zhihu.js";
-import { baiduAdapter } from "../adapters/baidu.js";
+import { bilibiliAdapter } from "../adapters/bilibili.js";
+import { huggingfaceAdapter } from "../adapters/huggingface.js";
+import { githubTrendingAdapter } from "../adapters/github-trending.js";
 import type { PlatformAdapter, HotItem } from "../adapters/weibo.js";
-import cache from "../cache.js";
+import { getCache, setCache, dataState } from "../cache.js";
+import { getLatestSnapshot, getHistory } from "../db.js";
 
 const router = Router();
 
@@ -11,82 +14,114 @@ const router = Router();
 const adapters: Record<string, PlatformAdapter> = {
   weibo: weiboAdapter,
   zhihu: zhihuAdapter,
-  baidu: baiduAdapter,
+  bilibili: bilibiliAdapter,
+  huggingface: huggingfaceAdapter,
+  github: githubTrendingAdapter,
 };
 
-/** 是否为生产环境 */
 function isProduction(): boolean {
   return process.env.NODE_ENV !== "development";
 }
-interface ApiResponse {
-  code: number;
+
+/** V2 API 响应格式 */
+interface PlatformResponse {
+  success: boolean;
+  stale: boolean;
   platform: string;
   title: string;
   type: string;
-  updateTime: string;
+  lastSuccessAt: string | null;
   data: HotItem[];
+  error?: string;
 }
 
+/** 构建 V2 响应 */
 function buildResponse(
   adapter: PlatformAdapter,
-  data: HotItem[]
-): ApiResponse {
+  data: HotItem[],
+  success: boolean,
+  stale: boolean,
+  lastSuccessAt: string | null,
+  error?: string
+): PlatformResponse {
   return {
-    code: 200,
+    success,
+    stale,
     platform: adapter.meta.platformName,
     title: adapter.meta.displayName,
     type: adapter.meta.typeLabel,
-    updateTime: new Date().toISOString(),
+    lastSuccessAt,
     data,
+    ...(error ? { error } : {}),
   };
 }
 
-/** 采集单个平台数据，主线路失败自动降级到备用线路 */
+/** 五级降级链：采集单平台数据 */
 export async function fetchPlatform(
   adapter: PlatformAdapter
-): Promise<ApiResponse> {
+): Promise<PlatformResponse> {
+  const cacheKey = `hot:${adapter.meta.platformName}`;
+
+  // 1. 主线路
   try {
     const data = await adapter.fetch();
-    if (data.length > 0) return buildResponse(adapter, data);
+    if (data.length > 0) {
+      setCache(cacheKey, data);
+      return buildResponse(adapter, data, true, false, new Date().toISOString());
+    }
   } catch (e: any) {
-    console.warn(
-      `[${adapter.meta.platformName}] 主线路失败: ${e.message}，尝试备用线路`
-    );
+    console.warn(`[${adapter.meta.platformName}] 主线路失败: ${e.message}`);
   }
-  // 备用线路
+
+  // 2. 备用线路
   try {
     const data = await adapter.fallbackFetch();
-    return buildResponse(adapter, data);
+    if (data.length > 0) {
+      setCache(cacheKey, data);
+      return buildResponse(adapter, data, true, false, new Date().toISOString());
+    }
   } catch (e: any) {
-    console.error(
-      `[${adapter.meta.platformName}] 备用线路也失败: ${e.message}`
-    );
-    return buildResponse(adapter, []);
+    console.warn(`[${adapter.meta.platformName}] 备用线路失败: ${e.message}`);
   }
+
+  // 3. NodeCache（可能 stale）
+  const cached = getCache(cacheKey);
+  if (cached && dataState(cached) !== "invalid") {
+    const stale = dataState(cached) === "stale";
+    return buildResponse(
+      adapter,
+      cached.data,
+      true,
+      stale,
+      stale ? new Date(cached.fetchedAt).toISOString() : new Date().toISOString()
+    );
+  }
+
+  // 4. SQLite 历史快照
+  const snapshot = getLatestSnapshot(adapter.meta.platformName);
+  if (snapshot.length > 0) {
+    return buildResponse(adapter, snapshot, true, true, null);
+  }
+
+  // 5. 空数据
+  return buildResponse(adapter, [], false, false, null, "主备线路均不可用，且无历史快照");
 }
 
 /** GET /api/hot/all — 返回所有平台数据 */
 router.get("/all", async (_req, res) => {
   try {
-    const cached = cache.get("hot:all");
-    if (cached) {
-      res.json(cached);
-      return;
-    }
-    // 缓存未命中，即时采集
     const results = await Promise.all(
       Object.values(adapters).map(fetchPlatform)
     );
-    const all: Record<string, ApiResponse> = {};
+    const all: Record<string, PlatformResponse> = {};
     for (const r of results) {
       all[r.platform] = r;
     }
-    cache.set("hot:all", all);
     res.json(all);
   } catch (e: any) {
     console.error("[hot:all] 采集失败:", e.message);
     res.status(500).json({
-      code: 500,
+      success: false,
       message: isProduction() ? "服务繁忙，请稍后重试" : e.message,
     });
   }
@@ -98,38 +133,60 @@ router.get("/:platform", async (req, res, next) => {
     const adapter = adapters[req.params.platform];
     if (!adapter) {
       res.status(404).json({
-        code: 404,
+        success: false,
         message: `未知平台: ${req.params.platform}，支持: ${Object.keys(adapters).join(", ")}`,
       });
       return;
     }
-    const cacheKey = `hot:${adapter.meta.platformName}`;
-    const cached = cache.get(cacheKey) as ApiResponse | undefined;
-    if (cached) {
-      res.json(cached);
-      return;
-    }
     const result = await fetchPlatform(adapter);
-    cache.set(cacheKey, result);
     res.json(result);
   } catch (e: any) {
     next(e);
   }
 });
 
-/** 刷新所有平台数据到缓存 */
+/** GET /api/hot/:platform/history — 历史趋势（新增） */
+router.get("/:platform/history", async (req, res) => {
+  const adapter = adapters[req.params.platform];
+  if (!adapter) {
+    res.status(404).json({
+      success: false,
+      message: `未知平台: ${req.params.platform}`,
+    });
+    return;
+  }
+  const title = req.query.title as string | undefined;
+  if (!title) {
+    res.json({
+      success: false,
+      platform: adapter.meta.platformName,
+      title: "",
+      data: [],
+      message: "缺少 title 参数",
+    });
+    return;
+  }
+  const hours = parseInt(req.query.hours as string, 10) || 24;
+  const data = getHistory(adapter.meta.platformName, title, hours);
+  res.json({
+    success: true,
+    platform: adapter.meta.platformName,
+    title,
+    data,
+  });
+});
+
+/** 刷新所有平台数据到缓存（cron 调用） */
 export async function refreshAll(): Promise<void> {
+  console.log("[cron] 开始刷新...");
   const results = await Promise.all(
     Object.values(adapters).map(fetchPlatform)
   );
-  const all: Record<string, ApiResponse> = {};
+  let successCount = 0;
   for (const r of results) {
-    const key = `hot:${r.platform}`;
-    cache.set(key, r);
-    all[r.platform] = r;
+    if (r.success) successCount++;
   }
-  cache.set("hot:all", all);
-  console.log(`[cron] 已刷新 ${results.length} 个平台`);
+  console.log(`[cron] 已刷新: ${successCount}/${results.length} 平台成功`);
 }
 
 export default router;

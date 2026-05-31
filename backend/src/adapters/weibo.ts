@@ -1,4 +1,5 @@
 import axios from "axios";
+import { filterAI } from "./filter.js";
 
 export interface HotItem {
   rank: number;
@@ -34,13 +35,14 @@ async function weiboPrimary(): Promise<HotItem[]> {
     headers: { Referer: "https://weibo.com/", "User-Agent": UA },
   });
   const list: any[] = data?.data?.realtime ?? [];
-  return list.map((v, i) => ({
+  const items = list.map((v, i) => ({
     rank: i + 1,
     title: v.word || v.word_scheme || `热搜${i + 1}`,
     hot: v.num ?? null,
     url: `https://s.weibo.com/weibo?q=${encodeURIComponent(v.word || v.word_scheme || "")}`,
     desc: v.word_scheme || "",
   }));
+  return filterAI(items);
 }
 
 /** 微博备用线，移动端 API */
@@ -50,7 +52,7 @@ async function weiboFallback(): Promise<HotItem[]> {
     { headers: { "User-Agent": UA } }
   );
   const cards: any[] = data?.data?.cards?.flatMap((c: any) => c.card_group || c.cards || []) ?? [];
-  return cards
+  const items = cards
     .filter((c: any) => c.itemid)
     .map((v: any, i: number) => ({
       rank: i + 1,
@@ -59,13 +61,14 @@ async function weiboFallback(): Promise<HotItem[]> {
       url: v.scheme || `https://m.weibo.cn/detail/${v.itemid}`,
       desc: v.desc || "",
     }));
+  return filterAI(items);
 }
 
 export const weiboAdapter: PlatformAdapter = {
   meta: {
     platformName: "weibo",
     displayName: "微博",
-    typeLabel: "热搜榜",
+    typeLabel: "AI 热搜",
     sourceUrl: "https://weibo.com/ajax/side/hotSearch",
   },
   fetch: weiboPrimary,
