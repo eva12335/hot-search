@@ -1,6 +1,6 @@
 import type { AllPlatformsData, HistoryResponse } from "./types";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+const API_URL = import.meta.env.VITE_API_URL || "/api";
 
 /** 获取所有平台热搜数据 */
 export async function fetchAllHot(): Promise<AllPlatformsData> {

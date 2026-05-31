@@ -2,7 +2,7 @@ import { Router } from "express";
 import { weiboAdapter } from "../adapters/weibo.js";
 import { zhihuAdapter } from "../adapters/zhihu.js";
 import { bilibiliAdapter } from "../adapters/bilibili.js";
-import { huggingfaceAdapter } from "../adapters/huggingface.js";
+import { huggingfaceAdapter, MOCK_DATA as HF_MOCK } from "../adapters/huggingface.js";
 import { githubTrendingAdapter } from "../adapters/github-trending.js";
 import type { PlatformAdapter, HotItem } from "../adapters/weibo.js";
 import { getCache, setCache, dataState } from "../cache.js";
@@ -20,7 +20,7 @@ const adapters: Record<string, PlatformAdapter> = {
 };
 
 function isProduction(): boolean {
-  return process.env.NODE_ENV !== "development";
+  return process.env.NODE_ENV === "production";
 }
 
 /** V2 API 响应格式 */
@@ -103,7 +103,13 @@ export async function fetchPlatform(
     return buildResponse(adapter, snapshot, true, true, null);
   }
 
-  // 5. 空数据
+  // 5. 开发环境 mock 数据（HuggingFace 国内不可用）
+  if (!isProduction() && adapter.meta.platformName === "huggingface") {
+    console.warn(`[${adapter.meta.platformName}] 使用本地 mock 数据`);
+    return buildResponse(adapter, HF_MOCK, true, false, new Date().toISOString());
+  }
+
+  // 6. 空数据
   return buildResponse(adapter, [], false, false, null, "主备线路均不可用，且无历史快照");
 }
 

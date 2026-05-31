@@ -60,7 +60,7 @@ export default function App() {
     data &&
     PLATFORM_ORDER.every((p) => data[p] && !data[p].success);
 
-  // Tab 过滤
+  // Tab 过滤（分类维度）
   const filteredPlatforms = PLATFORM_ORDER.filter((p) => {
     if (tab === "all") return true;
     return PLATFORM_TABS[p] === tab;
@@ -93,8 +93,8 @@ export default function App() {
         )}
 
         <PlatformGrid>
-          {filteredPlatforms.map((platform) => (
-            <div key={platform} className="animate-fade-in-up">
+          {filteredPlatforms.map((platform, i) => (
+            <div key={platform} className="animate-fade-in-up" style={{ animationDelay: `${i * 80}ms` }}>
               <HotCard
                 platformData={data?.[platform]}
                 state={cardState(data?.[platform], isLoading)}

@@ -11,6 +11,14 @@ const PLATFORM_COLORS: Record<string, string> = {
   github: "#8b949e",
 };
 
+const PLATFORM_NAMES: Record<string, string> = {
+  weibo: "微博",
+  zhihu: "知乎",
+  bilibili: "B 站",
+  huggingface: "HuggingFace",
+  github: "GitHub",
+};
+
 interface TrendOverlayProps {
   platform: string;
   title: string;
@@ -29,20 +37,20 @@ function drawChart(
   const rect = canvas.getBoundingClientRect();
   canvas.width = rect.width * dpr;
   canvas.height = rect.height * dpr;
-  ctx.scale(dpr, dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   const W = rect.width;
   const H = rect.height;
-  const padding = { top: 24, right: 24, bottom: 40, left: 60 };
+  const padding = { top: 24, right: 24, bottom: 36, left: 52 };
   const plotW = W - padding.left - padding.right;
   const plotH = H - padding.top - padding.bottom;
 
   ctx.clearRect(0, 0, W, H);
 
-  // Y 轴刻度线
-  ctx.strokeStyle = "rgba(255,255,255,0.06)";
+  // Grid lines
+  ctx.strokeStyle = "rgba(255,255,255,0.04)";
   ctx.lineWidth = 1;
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i <= 4; i++) {
     const y = padding.top + (plotH / 4) * i;
     ctx.beginPath();
     ctx.moveTo(padding.left, y);
@@ -52,15 +60,16 @@ function drawChart(
 
   const maxHot = Math.max(...data.map((d) => d.hot), 1);
   const minHot = Math.min(...data.map((d) => d.hot), 0);
+  const range = maxHot - minHot || 1;
 
-  // 数据点坐标
+  // Data points
   const points = data.map((d, i) => ({
     x: padding.left + (plotW / Math.max(data.length - 1, 1)) * i,
-    y: padding.top + plotH - ((d.hot - minHot) / Math.max(maxHot - minHot, 1)) * plotH,
+    y: padding.top + ((maxHot - d.hot) / range) * plotH,
     ...d,
   }));
 
-  // 面积渐变填充
+  // Area gradient fill
   const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + plotH);
   gradient.addColorStop(0, color + "40");
   gradient.addColorStop(1, color + "05");
@@ -72,37 +81,44 @@ function drawChart(
   ctx.closePath();
   ctx.fill();
 
-  // 发光底层 + 折线
+  // Glow line
   ctx.strokeStyle = color + "30";
   ctx.lineWidth = 6;
+  ctx.lineJoin = "round";
   ctx.beginPath();
   points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
   ctx.stroke();
 
+  // Main line
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
+  ctx.lineJoin = "round";
   ctx.beginPath();
   points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
   ctx.stroke();
 
-  // 数据点
+  // Data points
   points.forEach((p, i) => {
-    ctx.fillStyle = i === points.length - 1 ? "#fff" : color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, i === points.length - 1 ? 5 : 3, 0, Math.PI * 2);
-    ctx.fill();
     if (i === points.length - 1) {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
+      ctx.fillStyle = "#e8e4dd";
       ctx.beginPath();
       ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+    } else {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fill();
     }
   });
 
-  // X 轴时间标签
+  // X-axis time labels
   ctx.fillStyle = "#5c5a55";
-  ctx.font = "11px monospace";
+  ctx.font = "10px monospace";
   ctx.textAlign = "center";
   const step = Math.max(1, Math.floor(data.length / 6));
   data.forEach((d, i) => {
@@ -112,13 +128,15 @@ function drawChart(
     }
   });
 
-  // Y 轴热度标签
+  // Y-axis labels
+  ctx.fillStyle = "#5c5a55";
+  ctx.font = "10px 'SF Mono', monospace";
   ctx.textAlign = "right";
   for (let i = 0; i <= 4; i++) {
-    const val = minHot + ((maxHot - minHot) / 4) * (4 - i);
-    const y = padding.top + (plotH / 4) * i;
-    const label = val >= 10000 ? `${(val / 10000).toFixed(0)}万` : val.toFixed(0);
-    ctx.fillText(label, padding.left - 8, y + 4);
+    const val = maxHot - (range / 4) * i;
+    const y = padding.top + (plotH / 4) * i + 3;
+    const label = val >= 10000 ? `${(val / 10000).toFixed(0)}万` : val >= 1000 ? val.toFixed(0) : val.toString();
+    ctx.fillText(label, padding.left - 8, y);
   }
 }
 
@@ -152,35 +170,27 @@ export default function TrendOverlay({ platform, title, onClose }: TrendOverlayP
 
   return (
     <div className="trend-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="trend-dialog">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold" style={{ fontFamily: "Georgia, 'Noto Serif SC', serif", color: color }}>
-            {title}
-          </h3>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-lg cursor-pointer"
-            style={{ background: "rgba(255,255,255,0.06)", color: "var(--text-secondary)" }}
-          >
-            ✕
-          </button>
+      <div className="trend-panel">
+        <div className="trend-panel-header">
+          <h3>{title}</h3>
+          <button className="trend-close" onClick={onClose}>✕</button>
         </div>
 
-        {!data || data.data.length < 2 ? (
-          <div
-            className="flex items-center justify-center text-sm"
-            style={{ height: 260, color: "var(--text-muted)" }}
-          >
-            {data && data.data.length === 0 ? "数据积累中，请稍后再试" : "加载中..."}
-          </div>
-        ) : (
-          <canvas ref={canvasRef} style={{ width: "100%", height: 260 }} />
-        )}
+        <div className="trend-chart-wrap">
+          {!data || data.data.length < 2 ? (
+            <div className="trend-empty">
+              <span className="trend-empty-icon">📊</span>
+              {data && data.data.length === 0 ? "数据积累中，请稍后再试" : "加载中..."}
+            </div>
+          ) : (
+            <canvas ref={canvasRef} />
+          )}
+        </div>
 
-        <div className="flex items-center gap-6 mt-4 text-xs" style={{ color: "var(--text-secondary)" }}>
-          <span>平台：{platform}</span>
-          <span>当前排名：#{data?.data?.[data.data.length - 1]?.rank ?? "—"}</span>
-          {peak != null && <span>24h 峰值：{peak >= 10000 ? `${(peak / 10000).toFixed(1)}万` : peak}</span>}
+        <div className="trend-meta">
+          <span><strong>平台</strong> {PLATFORM_NAMES[platform] || platform}</span>
+          <span><strong>当前排名</strong> #{data?.data?.[data.data.length - 1]?.rank ?? "—"}</span>
+          {peak != null && <span><strong>24h 峰值</strong> {peak >= 10000 ? `${(peak / 10000).toFixed(1)}万` : peak}</span>}
         </div>
       </div>
     </div>

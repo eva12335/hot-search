@@ -1,7 +1,7 @@
 export type TabFilter = "all" | "social" | "ai";
 
 const TABS: { key: TabFilter; label: string }[] = [
-  { key: "all", label: "全部" },
+  { key: "all", label: "全部平台" },
   { key: "social", label: "社交平台" },
   { key: "ai", label: "AI 原生" },
 ];
@@ -14,7 +14,7 @@ interface TabBarProps {
 export default function TabBar({ active, onChange }: TabBarProps) {
   return (
     <div className="flex justify-center py-6">
-      <div className="tab-capsule">
+      <nav className="tabs-bar">
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -24,7 +24,7 @@ export default function TabBar({ active, onChange }: TabBarProps) {
             {tab.label}
           </button>
         ))}
-      </div>
+      </nav>
     </div>
   );
 }
