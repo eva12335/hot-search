@@ -58,51 +58,35 @@ app.get("/api/health", (_req, res) => {
 
 // 临时调试
 app.get("/api/debug/yt", async (_req, res) => {
-  const http = axios.create({ timeout: 10000 });
-  // 尝试不同的 header 组合
-  const { data } = await http.get("https://www.youtube.com/feed/trending?gl=US&hl=en", {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-      "Accept-Language": "en-US,en;q=0.9",
-    },
-  });
-  const startIdx = data.indexOf("var ytInitialData = ");
-  if (startIdx === -1) { res.json({ err: "no ytInitialData", len: data.length }); return; }
-  const jsonStart = data.indexOf("{", startIdx);
-  let depth = 0, jsonEnd = -1;
-  for (let i = jsonStart; i < data.length; i++) {
-    if (data[i] === "{") depth++;
-    else if (data[i] === "}") { depth--; if (depth === 0) { jsonEnd = i + 1; break; } }
-  }
-  if (jsonEnd === -1) { res.json({ err: "no close brace" }); return; }
-  let yt: any;
-  try { yt = JSON.parse(data.substring(jsonStart, jsonEnd)); }
-  catch (e: any) { res.json({ err: "parse fail: " + e.message }); return; }
-  // 提取视频
-  const tabContent = yt?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]?.tabRenderer?.content;
-  const richGrid = tabContent?.richGridRenderer?.contents;
+  const http = axios.create({ timeout: 10000, headers: { "User-Agent": "Mozilla/5.0" } });
+  const results: any = {};
 
-  // 列出 richGrid 中每一项的 renderer 类型
-  const itemTypes: string[] = [];
-  if (Array.isArray(richGrid)) {
-    for (const item of richGrid) {
-      const keys = Object.keys(item);
-      itemTypes.push(keys[0] || 'empty');
+  // 测试 Piped API
+  try {
+    const r = await http.get("https://pipedapi.kavin.rocks/trending?region=US");
+    results.piped = { status: r.status, items: Array.isArray(r.data) ? r.data.length : 'not_array' };
+    if (Array.isArray(r.data) && r.data.length > 0) {
+      results.piped_sample = r.data.slice(0, 3).map((v: any) => ({
+        title: v.title, videoId: v.videoId, views: v.views, uploadedDate: v.uploadedDate
+      }));
     }
+  } catch (e: any) { results.piped = { error: e.message, code: e.code }; }
+
+  // 测试其他 Invidious 实例
+  for (const inst of [
+    "https://invidious.fdn.fr",
+    "https://inv.us.projectsegfau.lt",
+    "https://invidious.slipfox.xyz",
+    "https://invidious.nerdvpn.de",
+    "https://iv.ggtyler.dev",
+  ]) {
+    try {
+      const r = await http.get(`${inst}/api/v1/trending?region=US`);
+      results[inst] = { status: r.status, items: Array.isArray(r.data) ? r.data.length : 'not_array' };
+    } catch (e: any) { results[inst] = { error: e.message, code: e.code }; }
   }
-  // 检查是否有 continuation
-  const cont = richGrid?.find((i: any) => i?.continuationItemRenderer);
-  const contToken = cont?.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token;
 
-  // 取前 5 项深入看
-  const details = (richGrid || []).slice(0, 5).map((item: any) => {
-    const type = Object.keys(item)[0];
-    const content = item[type]?.content;
-    const contentKeys = content ? Object.keys(content) : [];
-    return { type, contentKeys: contentKeys.slice(0, 5) };
-  });
-
-  res.json({ richGridLen: richGrid?.length, itemTypes, hasCont: !!cont, contToken: contToken?.substring(0, 40), details });
+  res.json(results);
 });
 
 // 全局错误处理 — 不暴露内部错误详情
