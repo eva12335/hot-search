@@ -1,24 +1,22 @@
 import axios from "axios";
 import type { HotItem, PlatformAdapter } from "./weibo.js";
 
-const http = axios.create({ timeout: 15000 });
+const UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+const http = axios.create({ timeout: 15000, headers: { "User-Agent": UA, "Accept-Language": "en-US,en;q=0.9" } });
 
-/** Invidious 公共实例列表（按优先级排列） */
-const INSTANCES = [
+/** Invidious 实例列表（备线） */
+const INVIDIOUS_INSTANCES = [
   "https://inv.nadeko.net",
-  "https://invidious.privacyredirect.com",
-  "https://vid.puffyan.us",
-  "https://invidious.tiekoetter.com",
   "https://yewtu.be",
+  "https://vid.puffyan.us",
 ];
 
-interface InvidiousVideo {
+interface VideoData {
   title: string;
   videoId: string;
   author: string;
   viewCount: number;
-  lengthSeconds: number;
-  publishedText?: string;
 }
 
 function formatViewCount(n: number): string {
@@ -27,7 +25,18 @@ function formatViewCount(n: number): string {
   return `${n}`;
 }
 
-export function toItem(v: InvidiousVideo, i: number): HotItem {
+function parseViewCount(text: string): number {
+  // "1.2M views" / "123K views" / "4.5B views" / "567,890 views" / "No views"
+  const cleaned = text.replace(/,/g, "").replace(/ views?/i, "").trim();
+  if (cleaned === "No" || cleaned === "0") return 0;
+  const num = parseFloat(cleaned);
+  if (cleaned.endsWith("B")) return num * 1e9;
+  if (cleaned.endsWith("M")) return num * 1e6;
+  if (cleaned.endsWith("K")) return num * 1e3;
+  return num || 0;
+}
+
+export function toItem(v: VideoData, i: number): HotItem {
   return {
     rank: i + 1,
     title: v.title,
@@ -37,34 +46,69 @@ export function toItem(v: InvidiousVideo, i: number): HotItem {
   };
 }
 
-async function fetchFromInstance(
-  instance: string,
-  region: string
-): Promise<InvidiousVideo[]> {
-  const { data } = await http.get(`${instance}/api/v1/trending?region=${region}`);
-  return Array.isArray(data) ? data : [];
-}
+/* ====== 主线：直接抓取 YouTube Trending 页面 ====== */
 
-/** 主线：US 区 trending */
-async function youtubePrimary(): Promise<HotItem[]> {
-  for (const instance of INSTANCES) {
-    try {
-      const videos = await fetchFromInstance(instance, "US");
-      if (videos.length > 0) return videos.map(toItem);
-    } catch {
+function extractVideos(ytData: any): VideoData[] {
+  const tabs =
+    ytData?.contents?.tabbedSearchResultsRenderer?.tabs?.[0]
+      ?.tabRenderer?.content?.sectionListRenderer?.contents;
+  if (!Array.isArray(tabs)) return [];
+
+  const items: any[] = [];
+  for (const section of tabs) {
+    const shelf =
+      section?.itemSectionRenderer?.contents?.[0]?.shelfRenderer?.content
+        ?.expandedShelfContentsRenderer?.items;
+    if (Array.isArray(shelf)) {
+      items.push(...shelf);
       continue;
     }
+    // 有些区域直接是 videoRenderer
+    const directItems = section?.itemSectionRenderer?.contents;
+    if (Array.isArray(directItems)) items.push(...directItems);
   }
-  return [];
+
+  const videos: VideoData[] = [];
+  for (const item of items) {
+    const v = item?.videoRenderer;
+    if (!v?.videoId) continue;
+    videos.push({
+      title: v.title?.runs?.[0]?.text || v.title?.simpleText || "",
+      videoId: v.videoId,
+      author: v.ownerText?.runs?.[0]?.text || "",
+      viewCount: parseViewCount(v.viewCountText?.simpleText || v.viewCountText?.runs?.map((r: any) => r.text).join("") || "0"),
+    });
+  }
+  return videos;
 }
 
-/** 备线：全球 trending + 更多实例 */
+async function youtubePrimary(): Promise<HotItem[]> {
+  const { data } = await http.get("https://www.youtube.com/feed/trending");
+  const match = data.match(/var ytInitialData\s*=\s*({.+?});/s);
+  if (!match) return [];
+  const ytData = JSON.parse(match[1]);
+  const videos = extractVideos(ytData);
+  return videos.map(toItem);
+}
+
+/* ====== 备线：Invidious API ====== */
+
+async function fetchInvidious(instance: string, region: string): Promise<VideoData[]> {
+  const { data } = await http.get(`${instance}/api/v1/trending?region=${region}`);
+  return Array.isArray(data) ? data.map((v: any) => ({
+    title: v.title,
+    videoId: v.videoId,
+    author: v.author,
+    viewCount: v.viewCount ?? 0,
+  })) : [];
+}
+
 async function youtubeFallback(): Promise<HotItem[]> {
-  const regions = ["US", "GB", "JP", "KR"];
-  for (const instance of INSTANCES.slice().reverse()) {
+  const regions = ["US", "GB", "JP"];
+  for (const instance of INVIDIOUS_INSTANCES) {
     for (const region of regions) {
       try {
-        const videos = await fetchFromInstance(instance, region);
+        const videos = await fetchInvidious(instance, region);
         if (videos.length > 0) return videos.map(toItem);
       } catch {
         continue;
