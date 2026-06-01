@@ -3,7 +3,6 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
-import axios from "axios";
 import hotRouter from "./routes/hot.js";
 import { startCron } from "./cron.js";
 import { initDB } from "./db.js";
@@ -54,39 +53,6 @@ app.use("/api/hot", hotRouter);
 // 健康检查
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
-});
-
-// 临时调试：测试外部网络连通性
-app.get("/api/debug/yt", async (_req, res) => {
-  const results: any = {};
-  const http = axios.create({ timeout: 10000, headers: { "User-Agent": "Mozilla/5.0" } });
-
-  // 测试 YouTube Trending 页面
-  try {
-    const r = await http.get("https://www.youtube.com/feed/trending", {
-      headers: { Cookie: "CONSENT=YES+cb" },
-      maxRedirects: 5,
-    });
-    results.youtube_trending = {
-      status: r.status,
-      has_ytInitialData: r.data.includes("ytInitialData"),
-      body_len: r.data.length,
-    };
-  } catch (e: any) {
-    results.youtube_trending = { error: e.message, code: e.code };
-  }
-
-  // 测试 Invidious
-  for (const inst of ["https://inv.nadeko.net", "https://yewtu.be"]) {
-    try {
-      const r = await http.get(`${inst}/api/v1/trending?region=US`);
-      results[inst] = { status: r.status, items: Array.isArray(r.data) ? r.data.length : "not_array" };
-    } catch (e: any) {
-      results[inst] = { error: e.message, code: e.code };
-    }
-  }
-
-  res.json(results);
 });
 
 // 全局错误处理 — 不暴露内部错误详情

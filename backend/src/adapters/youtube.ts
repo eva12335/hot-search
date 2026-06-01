@@ -86,7 +86,8 @@ async function youtubePrimary(): Promise<HotItem[]> {
   const { data } = await http.get("https://www.youtube.com/feed/trending", {
     headers: { Cookie: "CONSENT=YES+cb; SOCS=CAESNQgDEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjUwNjI2LjA2X3AwGgJlbiACGgYIgIuUvAY" },
   });
-  const match = data.match(/var ytInitialData\s*=\s*({.+?});/s);
+  // ytInitialData 是巨大 JSON（30 万字符），用 </script> 做锚点贪婪匹配
+  const match = data.match(/var ytInitialData\s*=\s*(\{.+});\s*<\/script>/s);
   if (!match) {
     console.error("[youtube] 未找到 ytInitialData, body 长度:", data.length);
     return [];
