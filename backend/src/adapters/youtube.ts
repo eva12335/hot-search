@@ -49,36 +49,32 @@ export function toItem(v: VideoData, i: number): HotItem {
 /* ====== 主线：直接抓取 YouTube Trending 页面 ====== */
 
 function extractVideos(ytData: any): VideoData[] {
-  const tabs =
+  const gridContents =
     ytData?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]
-      ?.tabRenderer?.content?.sectionListRenderer?.contents;
-  if (!Array.isArray(tabs)) return [];
+      ?.tabRenderer?.content?.richGridRenderer?.contents;
+  if (!Array.isArray(gridContents)) return [];
 
-  const items: any[] = [];
-  for (const section of tabs) {
-    const shelf =
-      section?.itemSectionRenderer?.contents?.[0]?.shelfRenderer?.content
-        ?.expandedShelfContentsRenderer?.items;
-    if (Array.isArray(shelf)) {
-      items.push(...shelf);
-      continue;
+  const renderers: any[] = [];
+  for (const item of gridContents) {
+    // richItemRenderer → 直接包含 videoRenderer
+    const v1 = item?.richItemRenderer?.content?.videoRenderer;
+    if (v1?.videoId) { renderers.push(v1); continue; }
+    // richSectionRenderer → 包含多个 richItemRenderer
+    const sub = item?.richSectionRenderer?.content?.richShelfRenderer?.contents;
+    if (Array.isArray(sub)) {
+      for (const s of sub) {
+        const v2 = s?.richItemRenderer?.content?.videoRenderer;
+        if (v2?.videoId) renderers.push(v2);
+      }
     }
-    const directItems = section?.itemSectionRenderer?.contents;
-    if (Array.isArray(directItems)) items.push(...directItems);
   }
 
-  const videos: VideoData[] = [];
-  for (const item of items) {
-    const v = item?.videoRenderer;
-    if (!v?.videoId) continue;
-    videos.push({
-      title: v.title?.runs?.[0]?.text || v.title?.simpleText || "",
-      videoId: v.videoId,
-      author: v.ownerText?.runs?.[0]?.text || "",
-      viewCount: parseViewCount(v.viewCountText?.simpleText || v.viewCountText?.runs?.map((r: any) => r.text).join("") || "0"),
-    });
-  }
-  return videos;
+  return renderers.map((v) => ({
+    title: v.title?.runs?.[0]?.text || v.title?.simpleText || "",
+    videoId: v.videoId,
+    author: v.ownerText?.runs?.[0]?.text || "",
+    viewCount: parseViewCount(v.viewCountText?.simpleText || v.viewCountText?.runs?.map((r: any) => r.text).join("") || "0"),
+  }));
 }
 
 async function youtubePrimary(): Promise<HotItem[]> {

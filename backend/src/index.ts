@@ -83,30 +83,37 @@ app.get("/api/debug/yt", async (_req, res) => {
   const sectionList = tabContent?.sectionListRenderer?.contents;
   const richGrid = tabContent?.richGridRenderer?.contents;
 
-  // 尝试提取第一个区域的内容
+  // 遍历 richGridRenderer.contents 收集所有 videoRenderer
   let items: any[] = [];
-  if (Array.isArray(sectionList)) {
-    for (const s of sectionList) {
-      const shelf = s?.itemSectionRenderer?.contents?.[0]?.shelfRenderer?.content?.expandedShelfContentsRenderer?.items;
-      if (Array.isArray(shelf)) { items.push(...shelf); continue; }
-      const direct = s?.itemSectionRenderer?.contents;
-      if (Array.isArray(direct)) items.push(...direct);
+  if (Array.isArray(richGrid)) {
+    for (const gridItem of richGrid) {
+      // 1. richItemRenderer → 直接包含 videoRenderer
+      const v1 = gridItem?.richItemRenderer?.content?.videoRenderer;
+      if (v1?.videoId) { items.push(v1); continue; }
+      // 2. richSectionRenderer → 包含多个视频
+      const subItems = gridItem?.richSectionRenderer?.content?.richShelfRenderer?.contents;
+      if (Array.isArray(subItems)) {
+        for (const si of subItems) {
+          const v2 = si?.richItemRenderer?.content?.videoRenderer;
+          if (v2?.videoId) items.push(v2);
+        }
+      }
     }
   }
-  const videos = items.filter(i => i?.videoRenderer?.videoId).map(i => ({
-    id: i.videoRenderer.videoId,
-    title: i.videoRenderer.title?.runs?.[0]?.text,
+  const videos = items.slice(0, 5).map(v => ({
+    id: v.videoId,
+    title: v.title?.runs?.[0]?.text,
+    author: v.ownerText?.runs?.[0]?.text,
+    views: v.viewCountText?.simpleText,
   }));
 
   res.json({
     hasTwoCol: !!twoCol,
     tabsCount: tabs?.length,
     tabContentKeys: tabContent ? Object.keys(tabContent) : 'no content',
-    sectionListLen: sectionList?.length,
     richGridLen: richGrid?.length,
     itemsFound: items.length,
-    videosFound: videos.length,
-    sample: videos.slice(0, 3),
+    sample: videos,
   });
 });
 
