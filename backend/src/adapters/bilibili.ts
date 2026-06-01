@@ -14,8 +14,8 @@ const MIXIN_KEY_ENC_TAB = [
   21, 56, 59, 6, 63, 57, 62, 11, 36, 20, 34, 44, 52,
 ];
 
-/** 搜索关键词 — 覆盖 AI 不同方向，避免过度重叠 */
-const SEARCH_KEYWORDS = ["人工智能", "大模型", "AI", "DeepSeek", "ChatGPT", "机器人", "自动驾驶"];
+/** 搜索关键词 — AI 新闻相关，避开泛词降低噪音 */
+const SEARCH_KEYWORDS = ["AI新闻", "人工智能", "大模型", "DeepSeek", "ChatGPT", "AI发展"];
 
 /** 对 img_key + sub_key 混排取前 32 位 */
 export function getMixinKey(orig: string): string {
@@ -81,7 +81,7 @@ async function bilibiliPrimary(): Promise<HotItem[]> {
         const params: Record<string, string | number> = {
           search_type: "video",
           keyword: kw,
-          order: "click",
+          order: "pubdate",
         };
         const signedQuery = encWbi(params, imgKey, subKey);
         const { data } = await http.get(
@@ -146,8 +146,8 @@ export const bilibiliAdapter: PlatformAdapter = {
   meta: {
     platformName: "bilibili",
     displayName: "B 站",
-    typeLabel: "AI 搜索",
-    sourceUrl: "https://search.bilibili.com/all?keyword=人工智能",
+    typeLabel: "AI 新闻",
+    sourceUrl: "https://search.bilibili.com/all?keyword=AI新闻",
   },
   fetch: bilibiliPrimary,
   fallbackFetch: bilibiliFallback,
