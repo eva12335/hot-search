@@ -86,13 +86,34 @@ async function youtubePrimary(): Promise<HotItem[]> {
   const { data } = await http.get("https://www.youtube.com/feed/trending", {
     headers: { Cookie: "CONSENT=YES+cb; SOCS=CAESNQgDEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjUwNjI2LjA2X3AwGgJlbiACGgYIgIuUvAY" },
   });
-  // ytInitialData 是巨大 JSON（30 万字符），用 </script> 做锚点贪婪匹配
-  const match = data.match(/var ytInitialData\s*=\s*(\{.+});\s*<\/script>/s);
-  if (!match) {
+  // 从 HTML 中提取 ytInitialData JSON（30 万字符），用括号计数找结尾
+  const startIdx = data.indexOf("var ytInitialData = ");
+  if (startIdx === -1) {
     console.error("[youtube] 未找到 ytInitialData, body 长度:", data.length);
     return [];
   }
-  const ytData = JSON.parse(match[1]);
+  const jsonStart = data.indexOf("{", startIdx);
+  if (jsonStart === -1) return [];
+
+  let depth = 0;
+  let jsonEnd = -1;
+  for (let i = jsonStart; i < data.length; i++) {
+    const ch = data[i];
+    if (ch === "{") depth++;
+    else if (ch === "}") { depth--; if (depth === 0) { jsonEnd = i + 1; break; } }
+  }
+  if (jsonEnd === -1) {
+    console.error("[youtube] JSON 括号未闭合");
+    return [];
+  }
+
+  let ytData: any;
+  try {
+    ytData = JSON.parse(data.substring(jsonStart, jsonEnd));
+  } catch (e: any) {
+    console.error("[youtube] JSON.parse 失败:", e.message);
+    return [];
+  }
   const videos = extractVideos(ytData);
   if (videos.length === 0) {
     console.error("[youtube] extractVideos 返回空, ytData keys:", Object.keys(ytData).slice(0, 5));

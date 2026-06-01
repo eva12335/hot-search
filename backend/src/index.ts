@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
+import axios from "axios";
 import hotRouter from "./routes/hot.js";
 import { startCron } from "./cron.js";
 import { initDB } from "./db.js";
@@ -53,6 +54,44 @@ app.use("/api/hot", hotRouter);
 // 健康检查
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
+});
+
+// 临时调试
+app.get("/api/debug/yt", async (_req, res) => {
+  const http = axios.create({ timeout: 10000, headers: { "User-Agent": "Mozilla/5.0" } });
+  const { data } = await http.get("https://www.youtube.com/feed/trending", {
+    headers: { Cookie: "CONSENT=YES+cb" },
+  });
+  const startIdx = data.indexOf("var ytInitialData = ");
+  if (startIdx === -1) { res.json({ err: "no ytInitialData", len: data.length }); return; }
+  const jsonStart = data.indexOf("{", startIdx);
+  let depth = 0, jsonEnd = -1;
+  for (let i = jsonStart; i < data.length; i++) {
+    if (data[i] === "{") depth++;
+    else if (data[i] === "}") { depth--; if (depth === 0) { jsonEnd = i + 1; break; } }
+  }
+  if (jsonEnd === -1) { res.json({ err: "no close brace" }); return; }
+  let yt: any;
+  try { yt = JSON.parse(data.substring(jsonStart, jsonEnd)); }
+  catch (e: any) { res.json({ err: "parse fail: " + e.message }); return; }
+  // 提取视频
+  const tabs = yt?.contents?.tabbedSearchResultsRenderer?.tabs?.[0]
+    ?.tabRenderer?.content?.sectionListRenderer?.contents;
+  const items: any[] = [];
+  if (Array.isArray(tabs)) {
+    for (const s of tabs) {
+      const shelf = s?.itemSectionRenderer?.contents?.[0]?.shelfRenderer?.content?.expandedShelfContentsRenderer?.items;
+      if (Array.isArray(shelf)) { items.push(...shelf); continue; }
+      const direct = s?.itemSectionRenderer?.contents;
+      if (Array.isArray(direct)) items.push(...direct);
+    }
+  }
+  const videos: any[] = [];
+  for (const item of items) {
+    const v = item?.videoRenderer;
+    if (v?.videoId) videos.push({ id: v.videoId, title: v.title?.runs?.[0]?.text });
+  }
+  res.json({ tabsCount: tabs?.length, itemsCount: items.length, videosCount: videos.length, sample: videos.slice(0, 3) });
 });
 
 // 全局错误处理 — 不暴露内部错误详情
