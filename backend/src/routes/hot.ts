@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { weiboAdapter } from "../adapters/weibo.js";
 import { zhihuAdapter } from "../adapters/zhihu.js";
-import { bilibiliAdapter } from "../adapters/bilibili.js";
+import { baiduAdapter } from "../adapters/baidu.js";
 import { huggingfaceAdapter } from "../adapters/huggingface.js";
 import { githubTrendingAdapter } from "../adapters/github-trending.js";
 import type { PlatformAdapter, HotItem } from "../adapters/weibo.js";
@@ -28,7 +28,7 @@ const router = Router();
 const adapters: Record<string, PlatformAdapter> = {
   weibo: weiboAdapter,
   zhihu: zhihuAdapter,
-  bilibili: bilibiliAdapter,
+  baidu: baiduAdapter,
   huggingface: huggingfaceAdapter,
   github: githubTrendingAdapter,
 };
