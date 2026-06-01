@@ -75,23 +75,24 @@ app.get("/api/debug/yt", async (_req, res) => {
   try { yt = JSON.parse(data.substring(jsonStart, jsonEnd)); }
   catch (e: any) { res.json({ err: "parse fail: " + e.message }); return; }
   // 提取视频
-  const tabs = yt?.contents?.tabbedSearchResultsRenderer?.tabs?.[0]
-    ?.tabRenderer?.content?.sectionListRenderer?.contents;
-  const items: any[] = [];
-  if (Array.isArray(tabs)) {
-    for (const s of tabs) {
-      const shelf = s?.itemSectionRenderer?.contents?.[0]?.shelfRenderer?.content?.expandedShelfContentsRenderer?.items;
-      if (Array.isArray(shelf)) { items.push(...shelf); continue; }
-      const direct = s?.itemSectionRenderer?.contents;
-      if (Array.isArray(direct)) items.push(...direct);
-    }
-  }
-  const videos: any[] = [];
-  for (const item of items) {
-    const v = item?.videoRenderer;
-    if (v?.videoId) videos.push({ id: v.videoId, title: v.title?.runs?.[0]?.text });
-  }
-  res.json({ tabsCount: tabs?.length, itemsCount: items.length, videosCount: videos.length, sample: videos.slice(0, 3) });
+  // 探索 ytInitialData 结构
+  const topKeys = Object.keys(yt);
+  const contentsType = yt?.contents ? Object.keys(yt.contents) : 'no contents';
+  const tabbed = yt?.contents?.tabbedSearchResultsRenderer;
+  const tabs = tabbed?.tabs;
+  const tab0 = tabs?.[0];
+  const tabContent = tab0?.tabRenderer?.content;
+  const sectionList = tabContent?.sectionListRenderer?.contents;
+
+  res.json({
+    topKeys,
+    contentsType,
+    hasTabbed: !!tabbed,
+    tabsCount: tabs?.length,
+    tab0Keys: tab0 ? Object.keys(tab0) : 'no tab0',
+    tabContentKeys: tabContent ? Object.keys(tabContent) : 'no tabContent',
+    sectionListLen: sectionList?.length,
+  });
 });
 
 // 全局错误处理 — 不暴露内部错误详情
