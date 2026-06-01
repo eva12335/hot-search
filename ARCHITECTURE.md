@@ -13,18 +13,19 @@ graph TB
         C3["B站 · AI过滤"]
         C4["HuggingFace"]
         C5["GitHub Trending"]
+        C6["YouTube"]
         TREND["TrendOverlay<br/>Canvas 2D 趋势图"]
         HEART["心跳保活<br/>/api/health · 2min"]
         USER --> APP
         APP --> TABS --> CARDS
-        CARDS --> C1 & C2 & C3 & C4 & C5
-        C1 & C2 & C3 & C4 & C5 --> TREND
+        CARDS --> C1 & C2 & C3 & C4 & C5 & C6
+        C1 & C2 & C3 & C4 & C5 & C6 --> TREND
         HEART -.-> |"后台定时"| API2
     end
 
     subgraph API[" API 层 Express + TypeScript "]
         direction TB
-        API1["GET /api/hot/all<br/>5 平台最新榜单"]
+        API1["GET /api/hot/all<br/>6 平台最新榜单"]
         API2["GET /api/health<br/>心跳"]
         API3["GET /api/hot/:platform<br/>单平台榜单"]
         API4["GET /api/hot/:platform/history<br/>24h 趋势 · 新增"]
@@ -32,17 +33,18 @@ graph TB
         API1 & API2 & API3 & API4 --> ROUTER
     end
 
-    subgraph ADAPTER[" 采集层 5 适配器 + 过滤器 "]
+    subgraph ADAPTER[" 采集层 6 适配器 + 过滤器 "]
         direction TB
         FILTER["filter.ts<br/>AI 关键词过滤<br/>重排 rank"]
         WBO["weibo.ts<br/>微博热搜 · JSON API"]
         ZHH["zhihu.ts<br/>知乎热榜 · JSON API"]
         BLI["bilibili.ts<br/>B站热门 · WBI签名 · 新增"]
-        HUG["huggingface.ts<br/>HF 模型热搜 · 新增"]
-        GH["github-trending.ts<br/>GitHub Trending · 新增"]
+        HUG["huggingface.ts<br/>HF 模型热搜"]
+        GH["github-trending.ts<br/>GitHub Trending"]
+        YT["youtube.ts<br/>YouTube 热门视频"]
         WBO & ZHH & BLI --> FILTER
         FILTER --> ROUTER
-        HUG & GH --> ROUTER
+        HUG & GH & YT --> ROUTER
     end
 
     subgraph STORAGE[" 存储层 "]
@@ -111,8 +113,8 @@ sequenceDiagram
         API->>AD: 触发即时采集
         AD-->>API: 返回数据
     end
-    API-->>FE: JSON (5 平台榜单)
-    FE->>FE: 渲染 5 张卡片 + 3D 视差
+    API-->>FE: JSON (6 平台榜单)
+    FE->>FE: 渲染 6 张卡片 + 3D 视差
 
     Note over U,FE: === 点击话题 ===
     U->>FE: 点击某个话题
@@ -149,12 +151,13 @@ graph LR
         B["B站 API"]
         H["HuggingFace API"]
         G["GitHub Trending"]
+        Y["YouTube<br/>(Invidious API)"]
     end
 
     DNS["用户"]
     DNS -->|"HTTPS"| Vercel
     FE -->|"/api/*"| BE
-    BE -->|"fetch JSON"| W & Z & B & H & G
+    BE -->|"fetch JSON"| W & Z & B & H & G & Y
 
     style Vercel fill:#0a1228,stroke:#c9a96e,stroke-width:2px,color:#e8e4dd
     style Render fill:#0a1228,stroke:#6366f1,stroke-width:2px,color:#e8e4dd

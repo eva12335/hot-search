@@ -2,7 +2,7 @@ import { refreshAll } from "./routes/hot.js";
 import { getCache } from "./cache.js";
 import { insertSnapshot, cleanOldSnapshots } from "./db.js";
 
-const PLATFORMS = ["weibo", "zhihu", "bilibili", "huggingface", "github"];
+const PLATFORMS = ["weibo", "zhihu", "bilibili", "huggingface", "github", "youtube"];
 
 /** 启动定时刷新任务 */
 export function startCron(intervalMs: number): void {

@@ -4,6 +4,7 @@ import { zhihuAdapter } from "../adapters/zhihu.js";
 import { bilibiliAdapter } from "../adapters/bilibili.js";
 import { huggingfaceAdapter } from "../adapters/huggingface.js";
 import { githubTrendingAdapter } from "../adapters/github-trending.js";
+import { youtubeAdapter } from "../adapters/youtube.js";
 import type { PlatformAdapter, HotItem } from "../adapters/weibo.js";
 import { getCache, setCache, dataState } from "../cache.js";
 import { getLatestSnapshot, getHistory } from "../db.js";
@@ -31,6 +32,7 @@ const adapters: Record<string, PlatformAdapter> = {
   bilibili: bilibiliAdapter,
   huggingface: huggingfaceAdapter,
   github: githubTrendingAdapter,
+  youtube: youtubeAdapter,
 };
 
 function isProduction(): boolean {

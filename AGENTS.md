@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-"AI 热搜"是一个 AI 垂直领域多平台热搜聚合网站，从社交平台（微博/知乎/B 站）按 AI 关键词过滤 + AI 原生平台（HuggingFace/GitHub Trending）采集热门内容，以卡片网格展示。
+"AI 热搜"是一个 AI 垂直领域多平台热搜聚合网站，从社交平台（微博/知乎/B 站）按 AI 关键词过滤 + AI 原生平台（HuggingFace/GitHub Trending/YouTube）采集热门内容，以卡片网格展示。
 
 > 当前版本：V2.0（2026-05-31）| 前一版本 V1.0 为全品类聚合（已归档）
 
@@ -29,12 +29,13 @@
 │       └── index.css         # Tailwind v4 + 全局样式
 ├── backend/                  # Express + TypeScript 后端
 │   └── src/
-│       ├── adapters/         # 平台适配器 (5 个)
+│       ├── adapters/         # 平台适配器 (6 个)
 │       │   ├── weibo.ts         (改造：+AI 过滤)
 │       │   ├── zhihu.ts         (改造：+AI 过滤)
 │       │   ├── bilibili.ts      (新增，WBI 签名)
 │       │   ├── huggingface.ts   (新增)
 │       │   ├── github-trending.ts (新增)
+│       │   ├── youtube.ts         (新增，Invidious API)
 │       │   └── filter.ts        (AI 关键词过滤工具)
 │       ├── routes/
 │       │   └── hot.ts        # /api/hot/* 路由
@@ -92,7 +93,7 @@
 - **卡片**：玻璃拟态 (`backdrop-filter: blur(24px)`) + `perspective: 1200px` 3D 视差
 - **字体**：标题 `Georgia, 'Noto Serif SC'` | 正文 system fonts | 数字 monospace
 - **响应式**：桌面 3 列 / 平板 2 列 / 手机 1 列
-- **平台色**：微博 `#f97316` | 知乎 `#6366f1` | B 站 `#ec4899` | HuggingFace `#ffbd59` | GitHub `#8b949e`
+- **平台色**：微博 `#f97316` | 知乎 `#6366f1` | B 站 `#ec4899` | HuggingFace `#ffbd59` | GitHub `#8b949e` | YouTube `#ff0000`
 
 ## 常用命令
 
@@ -122,8 +123,9 @@ cd DailyHotApi && NODE_ENV=development pnpm dev  # 启动 (localhost:6688)
 | `weibo.ts` | 微博 | 社交·AI 过滤 | `weibo.com/ajax/side/hotSearch` | `m.weibo.cn/api/container/getIndex` | 无 |
 | `zhihu.ts` | 知乎 | 社交·AI 过滤 | `api.zhihu.com/topstory/hot-lists/total` | 页面解析 `/hot` | Cookie (可选) |
 | `bilibili.ts` | B 站 | 社交·AI 过滤 | `api.bilibili.com/x/web-interface/ranking/v2` | `/ranking?jsonp=jsonp` | WBI 签名 |
-| `huggingface.ts` | HuggingFace | AI 原生 | `/api/models?sort=trending&limit=30` | — | 无 |
+| `huggingface.ts` | HuggingFace | AI 原生 | `/api/trending` (hf-mirror) | `models?sort=lastModified` | 无 |
 | `github-trending.ts` | GitHub | AI 原生 | 社区 API / HTML 解析 | GitHub Search API | 无 |
+| `youtube.ts` | YouTube | 热门视频 | Invidious `/api/v1/trending?region=US` | 多区域多实例轮询 | 无 |
 
 ## 降级链
 

@@ -17,7 +17,7 @@
                              │ HTTPS
 ┌────────────────────────────▼─────────────────────────────────┐
 │                  API 层 (Express + TypeScript)                 │
-│  GET /api/hot/all              → 5 平台最新榜单 + 缓存         │
+│  GET /api/hot/all              → 6 平台最新榜单 + 缓存         │
 │  GET /api/hot/:platform        → 单平台最新榜单 + 缓存         │
 │  GET /api/hot/:platform/history?hours=24  → 历史趋势 (新增)   │
 │  GET /api/health               → 心跳保活                      │
@@ -27,7 +27,7 @@
 ┌────────────────────────────▼─────────────────────────────────┐
 │              采集层 (Cron + 适配器 + 过滤器)                      │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────┐ │
-│  │weibo.ts  │ │zhihu.ts  │ │bilibili  │ │hugging   │ │github│ │
+│  │weibo.ts  │ │zhihu.ts  │ │bilibili  │ │hugging   │ │github│ │youtube│ │
 │  │(过滤)    │ │(过滤)    │ │.ts(过滤) │ │face.ts   │ │-trend│ │
 │  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └──┬───┘ │
 │       └─────────────┴────────────┴────────────┴────────┘       │
@@ -85,6 +85,7 @@ export interface PlatformAdapter {
 | `bilibili.ts` | B 站 | 社交平台·AI 过滤 | WBI 签名 | 新增：替换 baidu |
 | `huggingface.ts` | HuggingFace | AI 原生 | 无 | 新增 |
 | `github-trending.ts` | GitHub Trending | AI 原生 | 无 | 新增 |
+| `youtube.ts` | YouTube | 热门视频 | 无 | 新增：Invidious API |
 | `filter.ts` | — | 关键词过滤工具 | — | 新增 |
 
 ### 2.3 AI 关键词过滤器
@@ -120,12 +121,20 @@ export function filterAI(items: HotItem[]): HotItem[] {
 ### 2.5 HuggingFace 适配器
 
 ```
-端点: https://huggingface.co/api/models?sort=trending&limit=30
+端点: https://hf-mirror.com/api/trending（主线）/ models?sort=lastModified（备线）
 无鉴权，直接 GET
-字段映射: id → title, downloads → hot, trendingScore → 热度权重
+字段映射: id → title, likes → hot, downloads → 描述信息
 ```
 
-### 2.6 GitHub Trending 适配器
+### 2.6 YouTube 适配器
+
+```
+端点: Invidious API /api/v1/trending?region=US（主线）/ 多区域轮询（备线）
+5 个公共实例 fallback，无鉴权
+字段映射: title → title, viewCount → hot, author → 描述信息
+```
+
+### 2.7 GitHub Trending 适配器
 
 ```
 方案: github-trending-api (npm 社区包) 或直接 HTML 解析 github.com/trending

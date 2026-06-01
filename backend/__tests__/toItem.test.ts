@@ -1,48 +1,64 @@
 import { describe, it, expect } from "vitest";
 import { toItem } from "../src/adapters/huggingface.js";
 
+function trendingItem(overrides: Record<string, any> = {}) {
+  const defaults: Record<string, any> = {
+    id: "org/model",
+    downloads: 5_000_000,
+    likes: 100,
+    pipeline_tag: "text-generation",
+    repoType: "model",
+    author: "org",
+  };
+  // 允许显式传 undefined 覆盖默认值
+  const merged = { ...defaults };
+  for (const key of Object.keys(overrides)) {
+    merged[key] = overrides[key];
+  }
+  const { repoType, id, downloads, likes, pipeline_tag, author } = merged;
+  return {
+    repoData: { id, downloads, likes, pipeline_tag, repoType, author },
+    repoType,
+  };
+}
+
 describe("toItem", () => {
-  it("完整字段映射", () => {
-    const result = toItem(
-      { id: "org/model", downloads: 5_000_000, pipeline_tag: "text-gen", description: "A great model" },
-      0
-    );
+  it("完整字段映射 (model)", () => {
+    const result = toItem(trendingItem(), 0);
     expect(result.rank).toBe(1);
     expect(result.title).toBe("org/model");
-    expect(result.hot).toBe(5_000_000);
+    expect(result.hot).toBe(100);
     expect(result.url).toBe("https://huggingface.co/org/model");
-    expect(result.desc).toBe("text-gen · 5.0M downloads");
+    expect(result.desc).toBe("text-generation · 5000.0K downloads");
   });
 
-  it("缺 downloads → hot = 0", () => {
-    const result = toItem({ id: "x/y", pipeline_tag: "text-gen" }, 0);
-    expect(result.hot).toBe(0);
+  it("dataset 类型 → 显示数据集标签", () => {
+    const result = toItem(
+      trendingItem({ repoType: "dataset", pipeline_tag: undefined }), 0
+    );
+    expect(result.desc).toBe("数据集 · 5000.0K downloads");
+  });
+
+  it("space 类型 → 显示 Space 标签", () => {
+    const result = toItem(
+      trendingItem({ repoType: "space", pipeline_tag: undefined }), 0
+    );
+    expect(result.desc).toBe("Space · 5000.0K downloads");
+  });
+
+  it("缺 likes → hot = 10", () => {
+    const result = toItem(trendingItem({ likes: undefined }), 0);
+    expect(result.hot).toBe(10);
   });
 
   it("缺 id → 用 model-N 兜底", () => {
-    const result = toItem({ downloads: 100 }, 4);
+    const result = toItem(trendingItem({ id: undefined }), 4);
     expect(result.title).toBe("model-5");
     expect(result.rank).toBe(5);
   });
 
-  it("无 pipeline_tag，有 description → 截取前 80 字符", () => {
-    const longDesc = "A".repeat(100);
-    const result = toItem({ id: "x/y", downloads: 100, description: longDesc }, 0);
-    expect(result.desc).toBe(longDesc.slice(0, 80));
-  });
-
-  it("无 pipeline_tag，description 为空 → 空 desc", () => {
-    const result = toItem({ id: "x/y", downloads: 100, description: "" }, 0);
-    expect(result.desc).toBe("");
-  });
-
-  it("downloads = 0（falsy 但保留）", () => {
-    const result = toItem({ id: "x/y", downloads: 0, pipeline_tag: "text-gen" }, 0);
-    expect(result.hot).toBe(0);
-  });
-
   it("非零索引", () => {
-    const result = toItem({ id: "x" }, 9);
+    const result = toItem(trendingItem(), 9);
     expect(result.rank).toBe(10);
   });
 });

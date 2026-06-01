@@ -8,7 +8,7 @@ const DB_PATH = process.env.SQLITE_PATH || "./data/hot.db";
 let db: Database.Database;
 
 /** 所有 5 个平台 */
-const PLATFORMS = ["weibo", "zhihu", "bilibili", "huggingface", "github"];
+const PLATFORMS = ["weibo", "zhihu", "bilibili", "huggingface", "github", "youtube"];
 
 /** 初始化数据库，创建表和索引 */
 export function initDB(): void {
