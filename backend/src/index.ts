@@ -78,26 +78,27 @@ app.get("/api/debug/yt", async (_req, res) => {
   const tabContent = yt?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]?.tabRenderer?.content;
   const richGrid = tabContent?.richGridRenderer?.contents;
 
-  // 看看 richGrid[0] 里面到底是什么
-  const firstItem = richGrid?.[0];
-  const firstKeys = firstItem ? Object.keys(firstItem) : [];
-  // 递归找所有 key 名
-  function allKeys(obj: any, depth = 0): string[] {
-    if (depth > 3 || !obj || typeof obj !== 'object') return [];
-    const keys: string[] = [];
-    for (const k of Object.keys(obj)) {
-      keys.push(k);
-      if (depth < 3) keys.push(...allKeys(obj[k], depth + 1).map(s => `  ${s}`));
+  // 列出 richGrid 中每一项的 renderer 类型
+  const itemTypes: string[] = [];
+  if (Array.isArray(richGrid)) {
+    for (const item of richGrid) {
+      const keys = Object.keys(item);
+      itemTypes.push(keys[0] || 'empty');
     }
-    return keys;
   }
+  // 检查是否有 continuation
+  const cont = richGrid?.find((i: any) => i?.continuationItemRenderer);
+  const contToken = cont?.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token;
 
-  res.json({
-    tabContentKeys: tabContent ? Object.keys(tabContent) : 'no content',
-    richGridLen: richGrid?.length,
-    firstItemKeys: firstKeys,
-    allKeysFirst: allKeys(firstItem),
+  // 取前 5 项深入看
+  const details = (richGrid || []).slice(0, 5).map((item: any) => {
+    const type = Object.keys(item)[0];
+    const content = item[type]?.content;
+    const contentKeys = content ? Object.keys(content) : [];
+    return { type, contentKeys: contentKeys.slice(0, 5) };
   });
+
+  res.json({ richGridLen: richGrid?.length, itemTypes, hasCont: !!cont, contToken: contToken?.substring(0, 40), details });
 });
 
 // 全局错误处理 — 不暴露内部错误详情
