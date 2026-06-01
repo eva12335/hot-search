@@ -86,6 +86,12 @@ app.get("/api/debug/yt", async (_req, res) => {
     } catch (e: any) { results[inst] = { error: e.message, code: e.code }; }
   }
 
+  // 看看 iv.ggtyler.dev 返回什么
+  try {
+    const r2 = await http.get("https://iv.ggtyler.dev/api/v1/trending?region=US");
+    results["iv.ggtyler.dev_raw"] = { type: typeof r2.data, isArray: Array.isArray(r2.data), first100: JSON.stringify(r2.data).substring(0, 200) };
+  } catch (e: any) { results["iv.ggtyler.dev_raw"] = { error: e.message }; }
+
   res.json(results);
 });
 
