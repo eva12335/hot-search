@@ -75,45 +75,28 @@ app.get("/api/debug/yt", async (_req, res) => {
   try { yt = JSON.parse(data.substring(jsonStart, jsonEnd)); }
   catch (e: any) { res.json({ err: "parse fail: " + e.message }); return; }
   // 提取视频
-  // 探索正确的 YouTube 页面结构
-  const twoCol = yt?.contents?.twoColumnBrowseResultsRenderer;
-  const tabs = twoCol?.tabs;
-  const tab0 = tabs?.[0];
-  const tabContent = tab0?.tabRenderer?.content;
-  const sectionList = tabContent?.sectionListRenderer?.contents;
+  const tabContent = yt?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]?.tabRenderer?.content;
   const richGrid = tabContent?.richGridRenderer?.contents;
 
-  // 遍历 richGridRenderer.contents 收集所有 videoRenderer
-  let items: any[] = [];
-  if (Array.isArray(richGrid)) {
-    for (const gridItem of richGrid) {
-      // 1. richItemRenderer → 直接包含 videoRenderer
-      const v1 = gridItem?.richItemRenderer?.content?.videoRenderer;
-      if (v1?.videoId) { items.push(v1); continue; }
-      // 2. richSectionRenderer → 包含多个视频
-      const subItems = gridItem?.richSectionRenderer?.content?.richShelfRenderer?.contents;
-      if (Array.isArray(subItems)) {
-        for (const si of subItems) {
-          const v2 = si?.richItemRenderer?.content?.videoRenderer;
-          if (v2?.videoId) items.push(v2);
-        }
-      }
+  // 看看 richGrid[0] 里面到底是什么
+  const firstItem = richGrid?.[0];
+  const firstKeys = firstItem ? Object.keys(firstItem) : [];
+  // 递归找所有 key 名
+  function allKeys(obj: any, depth = 0): string[] {
+    if (depth > 3 || !obj || typeof obj !== 'object') return [];
+    const keys: string[] = [];
+    for (const k of Object.keys(obj)) {
+      keys.push(k);
+      if (depth < 3) keys.push(...allKeys(obj[k], depth + 1).map(s => `  ${s}`));
     }
+    return keys;
   }
-  const videos = items.slice(0, 5).map(v => ({
-    id: v.videoId,
-    title: v.title?.runs?.[0]?.text,
-    author: v.ownerText?.runs?.[0]?.text,
-    views: v.viewCountText?.simpleText,
-  }));
 
   res.json({
-    hasTwoCol: !!twoCol,
-    tabsCount: tabs?.length,
     tabContentKeys: tabContent ? Object.keys(tabContent) : 'no content',
     richGridLen: richGrid?.length,
-    itemsFound: items.length,
-    sample: videos,
+    firstItemKeys: firstKeys,
+    allKeysFirst: allKeys(firstItem),
   });
 });
 
