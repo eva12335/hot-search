@@ -78,9 +78,7 @@ function extractVideos(ytData: any): VideoData[] {
 }
 
 async function youtubePrimary(): Promise<HotItem[]> {
-  const { data } = await http.get("https://www.youtube.com/feed/trending", {
-    headers: { Cookie: "CONSENT=YES+cb; SOCS=CAESNQgDEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjUwNjI2LjA2X3AwGgJlbiACGgYIgIuUvAY" },
-  });
+  const { data } = await http.get("https://www.youtube.com/feed/trending?gl=US&hl=en");
   // 从 HTML 中提取 ytInitialData JSON（30 万字符），用括号计数找结尾
   const startIdx = data.indexOf("var ytInitialData = ");
   if (startIdx === -1) {

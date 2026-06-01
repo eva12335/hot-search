@@ -58,9 +58,13 @@ app.get("/api/health", (_req, res) => {
 
 // 临时调试
 app.get("/api/debug/yt", async (_req, res) => {
-  const http = axios.create({ timeout: 10000, headers: { "User-Agent": "Mozilla/5.0" } });
-  const { data } = await http.get("https://www.youtube.com/feed/trending", {
-    headers: { Cookie: "CONSENT=YES+cb" },
+  const http = axios.create({ timeout: 10000 });
+  // 尝试不同的 header 组合
+  const { data } = await http.get("https://www.youtube.com/feed/trending?gl=US&hl=en", {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "Accept-Language": "en-US,en;q=0.9",
+    },
   });
   const startIdx = data.indexOf("var ytInitialData = ");
   if (startIdx === -1) { res.json({ err: "no ytInitialData", len: data.length }); return; }
