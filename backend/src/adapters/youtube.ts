@@ -50,7 +50,7 @@ export function toItem(v: VideoData, i: number): HotItem {
 
 function extractVideos(ytData: any): VideoData[] {
   const tabs =
-    ytData?.contents?.tabbedSearchResultsRenderer?.tabs?.[0]
+    ytData?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]
       ?.tabRenderer?.content?.sectionListRenderer?.contents;
   if (!Array.isArray(tabs)) return [];
 
@@ -63,7 +63,6 @@ function extractVideos(ytData: any): VideoData[] {
       items.push(...shelf);
       continue;
     }
-    // 有些区域直接是 videoRenderer
     const directItems = section?.itemSectionRenderer?.contents;
     if (Array.isArray(directItems)) items.push(...directItems);
   }
