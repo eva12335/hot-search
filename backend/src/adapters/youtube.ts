@@ -83,11 +83,19 @@ function extractVideos(ytData: any): VideoData[] {
 }
 
 async function youtubePrimary(): Promise<HotItem[]> {
-  const { data } = await http.get("https://www.youtube.com/feed/trending");
+  const { data } = await http.get("https://www.youtube.com/feed/trending", {
+    headers: { Cookie: "CONSENT=YES+cb; SOCS=CAESNQgDEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjUwNjI2LjA2X3AwGgJlbiACGgYIgIuUvAY" },
+  });
   const match = data.match(/var ytInitialData\s*=\s*({.+?});/s);
-  if (!match) return [];
+  if (!match) {
+    console.error("[youtube] 未找到 ytInitialData, body 长度:", data.length);
+    return [];
+  }
   const ytData = JSON.parse(match[1]);
   const videos = extractVideos(ytData);
+  if (videos.length === 0) {
+    console.error("[youtube] extractVideos 返回空, ytData keys:", Object.keys(ytData).slice(0, 5));
+  }
   return videos.map(toItem);
 }
 
@@ -110,7 +118,9 @@ async function youtubeFallback(): Promise<HotItem[]> {
       try {
         const videos = await fetchInvidious(instance, region);
         if (videos.length > 0) return videos.map(toItem);
-      } catch {
+        console.warn(`[youtube] Invidious ${instance} region=${region} 返回空`);
+      } catch (e: any) {
+        console.warn(`[youtube] Invidious ${instance} region=${region} 失败:`, e.message);
         continue;
       }
     }
