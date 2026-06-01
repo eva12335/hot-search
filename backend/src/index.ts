@@ -3,7 +3,6 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
-import axios from "axios";
 import hotRouter from "./routes/hot.js";
 import { startCron } from "./cron.js";
 import { initDB } from "./db.js";
@@ -54,45 +53,6 @@ app.use("/api/hot", hotRouter);
 // 健康检查
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
-});
-
-// 临时调试
-app.get("/api/debug/yt", async (_req, res) => {
-  const http = axios.create({ timeout: 10000, headers: { "User-Agent": "Mozilla/5.0" } });
-  const results: any = {};
-
-  // 测试 Piped API
-  try {
-    const r = await http.get("https://pipedapi.kavin.rocks/trending?region=US");
-    results.piped = { status: r.status, items: Array.isArray(r.data) ? r.data.length : 'not_array' };
-    if (Array.isArray(r.data) && r.data.length > 0) {
-      results.piped_sample = r.data.slice(0, 3).map((v: any) => ({
-        title: v.title, videoId: v.videoId, views: v.views, uploadedDate: v.uploadedDate
-      }));
-    }
-  } catch (e: any) { results.piped = { error: e.message, code: e.code }; }
-
-  // 测试其他 Invidious 实例
-  for (const inst of [
-    "https://invidious.fdn.fr",
-    "https://inv.us.projectsegfau.lt",
-    "https://invidious.slipfox.xyz",
-    "https://invidious.nerdvpn.de",
-    "https://iv.ggtyler.dev",
-  ]) {
-    try {
-      const r = await http.get(`${inst}/api/v1/trending?region=US`);
-      results[inst] = { status: r.status, items: Array.isArray(r.data) ? r.data.length : 'not_array' };
-    } catch (e: any) { results[inst] = { error: e.message, code: e.code }; }
-  }
-
-  // 看看 iv.ggtyler.dev 返回什么
-  try {
-    const r2 = await http.get("https://iv.ggtyler.dev/api/v1/trending?region=US");
-    results["iv.ggtyler.dev_raw"] = { type: typeof r2.data, isArray: Array.isArray(r2.data), first100: JSON.stringify(r2.data).substring(0, 200) };
-  } catch (e: any) { results["iv.ggtyler.dev_raw"] = { error: e.message }; }
-
-  res.json(results);
 });
 
 // 全局错误处理 — 不暴露内部错误详情
