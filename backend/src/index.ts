@@ -64,25 +64,25 @@ app.get("/", (_req, res) => {
 <title>今日热搜 - 采集面板</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{background:#060b1a;color:#e8e4dd;font-family:system-ui,-apple-system,sans-serif;padding:24px;min-height:100vh}
-  h1{font-family:Georgia,'Noto Serif SC',serif;color:#c9a96e;font-size:24px;margin-bottom:4px}
-  .sub{color:#5c5a55;font-size:13px;margin-bottom:24px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
-  .card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;backdrop-filter:blur(16px)}
-  .card.ok{border-left:3px solid #4ade80}
-  .card.err{border-left:3px solid #f87171}
-  .card.load{border-left:3px solid #5c5a55}
-  .plat-name{font-weight:600;font-size:15px}
-  .plat-type{font-size:12px;color:#5c5a55;margin-left:8px}
-  .row{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
-  .stat{font-size:13px;color:#5c5a55}
-  .val{font-size:13px;font-family:monospace}
-  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
-  .badge-ok{background:rgba(74,222,128,0.15);color:#4ade80}
-  .badge-err{background:rgba(248,113,113,0.15);color:#f87171}
-  .badge-stale{background:rgba(201,169,110,0.15);color:#c9a96e}
-  .error-msg{font-size:12px;color:#f87171;margin-top:8px;word-break:break-all}
-  .refresh{font-size:12px;color:#5c5a55;text-align:right;margin-top:24px}
+  body{background:#060b1a;color:#e8e4dd;font-family:system-ui,-apple-system,sans-serif;padding:32px;min-height:100vh}
+  h1{font-family:Georgia,'Noto Serif SC',serif;color:#c9a96e;font-size:28px;margin-bottom:6px}
+  .sub{color:#8b8680;font-size:14px;margin-bottom:28px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+  .card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:20px}
+  .card.ok{border-left:4px solid #4ade80}
+  .card.err{border-left:4px solid #f87171}
+  .card.load{border-left:4px solid #8b8680}
+  .plat-name{font-weight:600;font-size:16px}
+  .plat-type{font-size:13px;color:#8b8680;margin-left:8px}
+  .row{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+  .stat{font-size:14px;color:#8b8680}
+  .val{font-size:14px;font-family:monospace;color:#d4cfc8}
+  .badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600}
+  .badge-ok{background:rgba(74,222,128,0.18);color:#4ade80}
+  .badge-err{background:rgba(248,113,113,0.18);color:#f87171}
+  .badge-stale{background:rgba(201,169,110,0.18);color:#c9a96e}
+  .error-msg{font-size:13px;color:#f87171;margin-top:8px;word-break:break-all}
+  .refresh{font-size:13px;color:#8b8680;text-align:right;margin-top:28px}
 </style>
 </head>
 <body>
