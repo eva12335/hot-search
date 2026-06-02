@@ -55,6 +55,75 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
 });
 
+// 状态面板
+app.get("/", (_req, res) => {
+  res.type("html").send(`<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>今日热搜 - 采集面板</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#060b1a;color:#e8e4dd;font-family:system-ui,-apple-system,sans-serif;padding:24px;min-height:100vh}
+  h1{font-family:Georgia,'Noto Serif SC',serif;color:#c9a96e;font-size:24px;margin-bottom:4px}
+  .sub{color:#5c5a55;font-size:13px;margin-bottom:24px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  .card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;backdrop-filter:blur(16px)}
+  .card.ok{border-left:3px solid #4ade80}
+  .card.err{border-left:3px solid #f87171}
+  .card.load{border-left:3px solid #5c5a55}
+  .plat-name{font-weight:600;font-size:15px}
+  .plat-type{font-size:12px;color:#5c5a55;margin-left:8px}
+  .row{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+  .stat{font-size:13px;color:#5c5a55}
+  .val{font-size:13px;font-family:monospace}
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
+  .badge-ok{background:rgba(74,222,128,0.15);color:#4ade80}
+  .badge-err{background:rgba(248,113,113,0.15);color:#f87171}
+  .badge-stale{background:rgba(201,169,110,0.15);color:#c9a96e}
+  .error-msg{font-size:12px;color:#f87171;margin-top:8px;word-break:break-all}
+  .refresh{font-size:12px;color:#5c5a55;text-align:right;margin-top:24px}
+</style>
+</head>
+<body>
+<h1>今日热搜 · 采集状态</h1>
+<p class="sub">刷新 <span id="tick">—</span> · uptime <span id="uptime">—</span></p>
+<div class="grid" id="grid"><div class="card load"><span class="stat">加载中...</span></div></div>
+<p class="refresh" id="err"></p>
+<script>
+const grid=document.getElementById('grid'),errEl=document.getElementById('err');
+async function fetchData(){
+  try{
+    const r=await fetch('/api/hot/all');
+    const d=await r.json();
+    const h=await fetch('/api/health').then(r=>r.json());
+    document.getElementById('uptime').textContent=Math.round(h.uptime)+'s';
+    document.getElementById('tick').textContent=new Date().toLocaleTimeString('zh-CN');
+    let html='';
+    for(const k of Object.keys(d).sort()){
+      const p=d[k],ok=p.success&&p.data?.length>0;
+      html+='<div class="card '+(ok?'ok':'err')+'">'
+        +'<div><span class="plat-name">'+p.title+'</span><span class="plat-type">'+p.type+'</span></div>'
+        +'<div class="row"><span class="stat">状态</span>'
+        +(p.stale?'<span class="badge badge-stale">降级</span>':'')
+        +(ok?'<span class="badge badge-ok">正常</span>':'<span class="badge badge-err">失败</span>')
+        +'</div>'
+        +'<div class="row"><span class="stat">数据条数</span><span class="val">'+p.data.length+'</span></div>'
+        +(p.lastSuccessAt?'<div class="row"><span class="stat">最后成功</span><span class="val">'+new Date(p.lastSuccessAt).toLocaleString('zh-CN')+'</span></div>':'')
+        +(p.error?'<div class="error-msg">'+p.error+'</div>':'')
+        +'</div>';
+    }
+    grid.innerHTML=html;
+    errEl.textContent='';
+  }catch(e){
+    errEl.textContent='连接失败: '+e.message;
+  }
+}
+fetchData();setInterval(fetchData,30000);
+</script>
+</body></html>`);
+});
+
 // 全局错误处理 — 不暴露内部错误详情
 function isProduction(): boolean {
   return process.env.NODE_ENV !== "development";
