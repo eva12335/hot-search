@@ -208,7 +208,7 @@ router.get("/:platform", async (req, res, next) => {
   }
 });
 
-/** GET /api/hot/:platform/history — 历史趋势（Vercel 无 SQLite，返回空数组） */
+/** GET /api/hot/:platform/history — 从内存缓存快照查找历史趋势 */
 router.get("/:platform/history", (req, res) => {
   const adapter = adapters[req.params.platform];
   if (!adapter) {
@@ -229,11 +229,31 @@ router.get("/:platform/history", (req, res) => {
     });
     return;
   }
+  const cacheKey = `hot:${adapter.meta.platformName}`;
+  const cached = getCache(cacheKey);
+  if (!cached || !cached.history || cached.history.length === 0) {
+    res.json({
+      success: true,
+      platform: adapter.meta.platformName,
+      title,
+      data: [],
+    });
+    return;
+  }
+  const points = [];
+  for (const snap of cached.history) {
+    const item = snap.items.find(
+      (i) => i.title === title || i.title.trim() === title.trim()
+    );
+    if (item) {
+      points.push({ time: snap.time, rank: item.rank, hot: item.hot });
+    }
+  }
   res.json({
     success: true,
     platform: adapter.meta.platformName,
     title,
-    data: [],
+    data: points,
   });
 });
 
