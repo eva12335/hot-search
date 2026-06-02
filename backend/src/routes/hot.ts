@@ -124,14 +124,15 @@ export async function fetchPlatform(
   return buildResponse(adapter, [], false, false, null, "暂无数据");
 }
 
-/** cron 用：强制远端拉取，不走缓存（Vercel 上每平台 ≤ 7s） */
+/** cron 用：强制远端拉取，不走缓存（每平台 primary 5s + fallback 3s = 8s） */
 export async function fetchPlatformForce(
   adapter: PlatformAdapter
 ): Promise<PlatformResponse> {
   const cacheKey = `hot:${adapter.meta.platformName}`;
-  const DEADLINE = 7000;
+  const DEADLINE_PRIMARY = 5000;
+  const DEADLINE_FALLBACK = 3000;
 
-  const primaryData = await withDeadline(() => adapter.fetch(), DEADLINE);
+  const primaryData = await withDeadline(() => adapter.fetch(), DEADLINE_PRIMARY);
   if (primaryData && primaryData.length > 0) {
     const prevEntry = getCache(cacheKey);
     const withDelta = computeDelta(prevEntry?.data, primaryData);
@@ -139,7 +140,7 @@ export async function fetchPlatformForce(
     return buildResponse(adapter, withDelta, true, false, new Date().toISOString());
   }
 
-  const fallbackData = await withDeadline(() => adapter.fallbackFetch(), DEADLINE);
+  const fallbackData = await withDeadline(() => adapter.fallbackFetch(), DEADLINE_FALLBACK);
   if (fallbackData && fallbackData.length > 0) {
     const prevEntry = getCache(cacheKey);
     const withDelta = computeDelta(prevEntry?.data, fallbackData);
@@ -257,12 +258,29 @@ router.get("/:platform/history", (req, res) => {
   });
 });
 
-/** 刷新所有平台数据到缓存（外部 cron 调用，强制远端拉取） */
+/** 刷新所有平台数据到缓存（外部 cron 调用，强制远端拉取，全局 9s 超时） */
 export async function refreshAll(): Promise<PlatformResponse[]> {
   console.log("[cron] 开始刷新...");
-  const results = await Promise.all(
-    Object.values(adapters).map(fetchPlatformForce)
-  );
+  const CRON_DEADLINE = 9000;
+  const results = await Promise.race([
+    Promise.all(Object.values(adapters).map(fetchPlatformForce)),
+    new Promise<PlatformResponse[]>((resolve) =>
+      setTimeout(() => {
+        console.warn("[cron] 9s 全局超时，收集部分结果");
+        const partial: PlatformResponse[] = [];
+        for (const adapter of Object.values(adapters)) {
+          const cacheKey = `hot:${adapter.meta.platformName}`;
+          const cached = getCache(cacheKey);
+          if (cached && dataState(cached) !== "invalid") {
+            partial.push(buildResponse(adapter, cached.data, true, dataState(cached) === "stale", new Date(cached.fetchedAt).toISOString()));
+          } else {
+            partial.push(buildResponse(adapter, [], false, false, null, "暂无数据"));
+          }
+        }
+        resolve(partial);
+      }, CRON_DEADLINE)
+    ),
+  ]);
   let successCount = 0;
   for (const r of results) {
     if (r.success) successCount++;
