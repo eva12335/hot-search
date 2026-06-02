@@ -24,6 +24,8 @@
   --huggingface-glow: rgba(255, 189, 89, 0.35);
   --github: #8b949e;
   --github-glow: rgba(139, 148, 158, 0.35);
+  --baidu: #ef4444;
+  --baidu-glow: rgba(239, 68, 68, 0.35);
   --up: #4ade80;
   --down: #f87171;
   --same: #5c5a55;
@@ -142,6 +144,7 @@ body {
 .card-icon-bilibili  { background: linear-gradient(135deg, #db2777, #ec4899); box-shadow: 0 4px 20px var(--bilibili-glow); }
 .card-icon-huggingface { background: linear-gradient(135deg, #d4a030, #ffbd59); box-shadow: 0 4px 20px var(--huggingface-glow); }
 .card-icon-github    { background: linear-gradient(135deg, #6e7681, #8b949e); box-shadow: 0 4px 20px var(--github-glow); }
+.card-icon-baidu     { background: linear-gradient(135deg, #dc2626, #ef4444); box-shadow: 0 4px 20px var(--baidu-glow); }
 
 /* ===== Header ===== */
 .header {

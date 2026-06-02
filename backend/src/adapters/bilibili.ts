@@ -125,10 +125,10 @@ async function bilibiliPrimary(): Promise<HotItem[]> {
   }));
 }
 
-/** 备用线路：全站热门榜 + AI 关键词过滤 */
+/** 备用线路：综合热门 + AI 关键词过滤，若 AI 过滤结果为空则返回原始热门 */
 async function bilibiliFallback(): Promise<HotItem[]> {
   const { data } = await http.get(
-    "https://api.bilibili.com/x/web-interface/ranking/v2?rid=0&type=all",
+    "https://api.bilibili.com/x/web-interface/popular?pn=1&ps=50",
     { headers: { Referer: "https://www.bilibili.com/", "User-Agent": UA } }
   );
   const list: any[] = data?.data?.list ?? [];
@@ -137,9 +137,10 @@ async function bilibiliFallback(): Promise<HotItem[]> {
     title: v.title || "",
     hot: v.stat?.view ?? v.stat?.reply ?? null,
     url: `https://www.bilibili.com/video/${v.bvid}`,
-    desc: v.owner?.name ? `UP: ${v.owner.name}` : "",
+    desc: v.owner?.name ? `UP: ${v.owner.name} · ${formatPlayCount(v.stat?.view ?? 0)} 次播放` : "",
   }));
-  return filterAI(items);
+  const filtered = filterAI(items);
+  return filtered.length > 0 ? filtered : items;
 }
 
 export const bilibiliAdapter: PlatformAdapter = {

@@ -20,6 +20,7 @@ const platformConfig: Record<string, {
   weibo:     { color: "#f97316", icon: "🔥", iconClass: "card-icon-weibo" },
   zhihu:     { color: "#6366f1", icon: "💡", iconClass: "card-icon-zhihu" },
   bilibili:  { color: "#ec4899", icon: "🎮", iconClass: "card-icon-bilibili" },
+  baidu:     { color: "#ef4444", icon: "🔍", iconClass: "card-icon-baidu" },
   huggingface: { color: "#ffbd59", icon: "🤗", iconClass: "card-icon-huggingface" },
   github:    { color: "#8b949e", icon: "🐙", iconClass: "card-icon-github" },
 };
