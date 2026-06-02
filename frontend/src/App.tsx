@@ -39,7 +39,7 @@ function resetGlobalParallax() {
 }
 
 /** 5 平台顺序 + 分类 */
-const PLATFORM_ORDER = ["weibo", "zhihu", "bilibili", "baidu", "huggingface", "github"];
+const PLATFORM_ORDER = ["weibo", "zhihu", "baidu", "bilibili", "huggingface", "github"];
 const PLATFORM_TABS: Record<string, TabFilter> = {
   weibo: "social",
   zhihu: "social",
