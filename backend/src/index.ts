@@ -88,10 +88,14 @@ app.get("/", (_req, res) => {
 <body>
 <h1>今日热搜 · 采集状态</h1>
 <p class="sub">刷新 <span id="tick">—</span> · uptime <span id="uptime">—</span></p>
-<div class="grid" id="grid"><div class="card load"><span class="stat">加载中...</span></div></div>
+<div class="grid" id="grid"><div class="card load" style="text-align:center;padding:32px"><span class="stat">正在唤醒服务器（Render 冷启动约需 30-60 秒）...</span><br><span class="stat" id="wait" style="font-family:monospace"></span></div></div>
 <p class="refresh" id="err"></p>
 <script>
-const grid=document.getElementById('grid'),errEl=document.getElementById('err');
+const grid=document.getElementById('grid'),errEl=document.getElementById('err'),waitEl=document.getElementById('wait');
+let waitSec=0,waitTimer=0;
+function startWait(){waitTimer=setInterval(()=>{waitSec++;if(waitEl)waitEl.textContent='已等待 '+waitSec+' 秒'},1000);}
+function stopWait(){clearInterval(waitTimer);}
+startWait();
 async function fetchData(){
   try{
     const r=await fetch('/api/hot/all');
@@ -115,8 +119,11 @@ async function fetchData(){
     }
     grid.innerHTML=html;
     errEl.textContent='';
+    stopWait();
   }catch(e){
-    errEl.textContent='连接失败: '+e.message;
+    errEl.textContent='连接失败: '+e.message+'（可刷新重试）';
+    stopWait();
+    grid.innerHTML='<div class="card err" style="text-align:center;padding:24px"><span style="color:#f87171">获取失败</span><br><span class="stat">'+e.message+'</span></div>';
   }
 }
 fetchData();setInterval(fetchData,30000);
