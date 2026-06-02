@@ -7,7 +7,6 @@ import { huggingfaceAdapter } from "../adapters/huggingface.js";
 import { githubTrendingAdapter } from "../adapters/github-trending.js";
 import type { PlatformAdapter, HotItem } from "../adapters/weibo.js";
 import { getCache, setCache, dataState } from "../cache.js";
-import { getLatestSnapshot, getHistory } from "../db.js";
 
 /** 对比上一轮数据，计算排名变化 delta */
 export function computeDelta(prevData: HotItem[] | undefined, current: HotItem[]): HotItem[] {
@@ -72,7 +71,7 @@ export function buildResponse(
   };
 }
 
-/** 跑一个异步任务，超时返回 null（不取消底层请求） */
+/** 跑一个异步任务，超时返回 null */
 async function withDeadline<T>(fn: () => Promise<T>, ms: number): Promise<T | null> {
   try {
     const result = await Promise.race([
@@ -86,21 +85,20 @@ async function withDeadline<T>(fn: () => Promise<T>, ms: number): Promise<T | nu
   }
 }
 
-/** API 路由用：缓存优先，仅在过期时才远端拉取 */
+/** 单个平台 API 路由用：缓存优先，过期时远端拉取（Vercel 上每平台 ≤ 5s） */
 export async function fetchPlatform(
   adapter: PlatformAdapter
 ): Promise<PlatformResponse> {
   const cacheKey = `hot:${adapter.meta.platformName}`;
-  const DEADLINE = 6000;
+  const DEADLINE = 5000;
 
-  // 缓存新鲜（<10min）→ 直接返回，毫秒级响应
+  // 缓存新鲜 → 直接返回
   const cached = getCache(cacheKey);
   if (cached && dataState(cached) === "fresh") {
     return buildResponse(adapter, cached.data, true, false, new Date(cached.fetchedAt).toISOString());
   }
 
-  // 缓存过期或不存在 → 去远端拉取
-  // 1. 主线路（带截止时间）
+  // 远端拉取
   const primaryData = await withDeadline(() => adapter.fetch(), DEADLINE);
   if (primaryData && primaryData.length > 0) {
     const prevEntry = getCache(cacheKey);
@@ -109,7 +107,6 @@ export async function fetchPlatform(
     return buildResponse(adapter, withDelta, true, false, new Date().toISOString());
   }
 
-  // 2. 备用线路（带截止时间）
   const fallbackData = await withDeadline(() => adapter.fallbackFetch(), DEADLINE);
   if (fallbackData && fallbackData.length > 0) {
     const prevEntry = getCache(cacheKey);
@@ -118,28 +115,21 @@ export async function fetchPlatform(
     return buildResponse(adapter, withDelta, true, false, new Date().toISOString());
   }
 
-  // 3. 有旧缓存（stale 但仍可用）
+  // 旧缓存降级
   if (cached && dataState(cached) !== "invalid") {
     return buildResponse(adapter, cached.data, true, true,
       new Date(cached.fetchedAt).toISOString());
   }
 
-  // 4. SQLite 历史快照
-  const snapshot = getLatestSnapshot(adapter.meta.platformName);
-  if (snapshot.length > 0) {
-    return buildResponse(adapter, snapshot, true, true, null);
-  }
-
-  // 5. 空数据
   return buildResponse(adapter, [], false, false, null, "暂无数据");
 }
 
-/** cron 用：强制远端拉取，不走缓存 */
+/** cron 用：强制远端拉取，不走缓存（Vercel 上每平台 ≤ 7s） */
 export async function fetchPlatformForce(
   adapter: PlatformAdapter
 ): Promise<PlatformResponse> {
   const cacheKey = `hot:${adapter.meta.platformName}`;
-  const DEADLINE = 8000;
+  const DEADLINE = 7000;
 
   const primaryData = await withDeadline(() => adapter.fetch(), DEADLINE);
   if (primaryData && primaryData.length > 0) {
@@ -166,27 +156,41 @@ export async function fetchPlatformForce(
   return buildResponse(adapter, [], false, false, null, "暂无数据");
 }
 
-/** GET /api/hot/all — 返回所有平台数据 */
-router.get("/all", async (_req, res) => {
-  try {
-    const results = await Promise.all(
-      Object.values(adapters).map(fetchPlatform)
-    );
-    const all: Record<string, PlatformResponse> = {};
-    for (const r of results) {
-      all[r.platform] = r;
+/** GET /api/hot/all — 纯缓存返回，不触发远端拉取（确保 Vercel <10s） */
+router.get("/all", (_req, res) => {
+  const all: Record<string, PlatformResponse> = {};
+  for (const adapter of Object.values(adapters)) {
+    const cacheKey = `hot:${adapter.meta.platformName}`;
+    const cached = getCache(cacheKey);
+    if (cached && dataState(cached) !== "invalid") {
+      all[adapter.meta.platformName] = buildResponse(
+        adapter, cached.data, true,
+        dataState(cached) === "stale",
+        new Date(cached.fetchedAt).toISOString()
+      );
+    } else {
+      all[adapter.meta.platformName] = buildResponse(adapter, [], false, false, null, "暂无数据");
     }
-    res.json(all);
+  }
+  res.json(all);
+});
+
+/** GET /api/hot/cron — 外部定时任务触发刷新 */
+router.get("/cron", async (_req, res) => {
+  const token = _req.query.token || _req.headers["x-cron-token"];
+  if (process.env.CRON_SECRET && token !== process.env.CRON_SECRET) {
+    res.status(401).json({ error: "unauthorized" });
+    return;
+  }
+  try {
+    await refreshAll();
+    res.json({ ok: true, time: new Date().toISOString() });
   } catch (e: any) {
-    console.error("[hot:all] 采集失败:", e.message);
-    res.status(500).json({
-      success: false,
-      message: isProduction() ? "服务繁忙，请稍后重试" : e.message,
-    });
+    res.status(500).json({ error: e.message });
   }
 });
 
-/** GET /api/hot/:platform — 返回单平台数据 */
+/** GET /api/hot/:platform — 单平台（缓存优先，过期时远端拉取） */
 router.get("/:platform", async (req, res, next) => {
   try {
     const adapter = adapters[req.params.platform];
@@ -204,8 +208,8 @@ router.get("/:platform", async (req, res, next) => {
   }
 });
 
-/** GET /api/hot/:platform/history — 历史趋势（新增） */
-router.get("/:platform/history", async (req, res) => {
+/** GET /api/hot/:platform/history — 历史趋势（Vercel 无 SQLite，返回空数组） */
+router.get("/:platform/history", (req, res) => {
   const adapter = adapters[req.params.platform];
   if (!adapter) {
     res.status(404).json({
@@ -225,17 +229,15 @@ router.get("/:platform/history", async (req, res) => {
     });
     return;
   }
-  const hours = parseInt(req.query.hours as string, 10) || 24;
-  const data = getHistory(adapter.meta.platformName, title, hours);
   res.json({
     success: true,
     platform: adapter.meta.platformName,
     title,
-    data,
+    data: [],
   });
 });
 
-/** 刷新所有平台数据到缓存（cron 调用，强制远端拉取） */
+/** 刷新所有平台数据到缓存（外部 cron 调用，强制远端拉取） */
 export async function refreshAll(): Promise<void> {
   console.log("[cron] 开始刷新...");
   const results = await Promise.all(

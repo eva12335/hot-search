@@ -1,0 +1,143 @@
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import dotenv from "dotenv";
+import hotRouter from "./routes/hot.js";
+
+dotenv.config();
+
+const app = express();
+
+// 反向代理后正确识别客户端 IP（Render / Vercel）
+app.set("trust proxy", 1);
+
+// 安全响应头
+app.use(helmet());
+
+// CORS — 允许多个前端来源（逗号分隔环境变量）
+const allowedOrigins = (process.env.CORS_ORIGIN || "https://hot-search-rho.vercel.app")
+  .split(",")
+  .map(s => s.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, cb) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`CORS blocked: ${origin}`));
+    }
+  }
+}));
+
+// 请求频率限制 — 仅作用于热搜 API
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { code: 429, message: "请求太频繁，请稍后再试" },
+});
+app.use("/api/hot", limiter);
+
+app.use(express.json());
+
+// 路由
+app.use("/api/hot", hotRouter);
+
+// 健康检查
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok", uptime: process.uptime() });
+});
+
+// 状态面板
+app.get("/", (_req, res) => {
+  res.type("html").send(`<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>今日热搜 - 采集面板</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#060b1a;color:#e8e4dd;font-family:system-ui,-apple-system,sans-serif;padding:32px;min-height:100vh}
+  h1{font-family:Georgia,'Noto Serif SC',serif;color:#c9a96e;font-size:28px;margin-bottom:6px}
+  .sub{color:#8b8680;font-size:14px;margin-bottom:28px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+  .card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:20px}
+  .card.ok{border-left:4px solid #4ade80}
+  .card.err{border-left:4px solid #f87171}
+  .card.load{border-left:4px solid #8b8680}
+  .plat-name{font-weight:600;font-size:16px}
+  .plat-type{font-size:13px;color:#8b8680;margin-left:8px}
+  .row{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+  .stat{font-size:14px;color:#8b8680}
+  .val{font-size:14px;font-family:monospace;color:#d4cfc8}
+  .badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600}
+  .badge-ok{background:rgba(74,222,128,0.18);color:#4ade80}
+  .badge-err{background:rgba(248,113,113,0.18);color:#f87171}
+  .badge-stale{background:rgba(201,169,110,0.18);color:#c9a96e}
+  .error-msg{font-size:13px;color:#f87171;margin-top:8px;word-break:break-all}
+  .refresh{font-size:13px;color:#8b8680;text-align:right;margin-top:28px}
+</style>
+</head>
+<body>
+<h1>今日热搜 · 采集状态</h1>
+<p class="sub">刷新 <span id="tick">—</span> · uptime <span id="uptime">—</span></p>
+<div class="grid" id="grid"><div class="card load" style="text-align:center;padding:32px"><span class="stat">正在唤醒服务器...</span><br><span class="stat" id="wait" style="font-family:monospace"></span></div></div>
+<p class="refresh" id="err"></p>
+<script>
+const grid=document.getElementById('grid'),errEl=document.getElementById('err'),waitEl=document.getElementById('wait');
+let waitSec=0,waitTimer=0;
+function startWait(){waitTimer=setInterval(()=>{waitSec++;if(waitEl)waitEl.textContent='已等待 '+waitSec+' 秒'},1000);}
+function stopWait(){clearInterval(waitTimer);}
+startWait();
+async function fetchData(){
+  try{
+    const r=await fetch('/api/hot/all');
+    const d=await r.json();
+    const h=await fetch('/api/health').then(r=>r.json());
+    document.getElementById('uptime').textContent=Math.round(h.uptime)+'s';
+    document.getElementById('tick').textContent=new Date().toLocaleTimeString('zh-CN');
+    let html='';
+    for(const k of Object.keys(d).sort()){
+      const p=d[k],ok=p.success&&p.data?.length>0;
+      html+='<div class="card '+(ok?'ok':'err')+'">'
+        +'<div><span class="plat-name">'+p.title+'</span><span class="plat-type">'+p.type+'</span></div>'
+        +'<div class="row"><span class="stat">状态</span>'
+        +(p.stale?'<span class="badge badge-stale">降级</span>':'')
+        +(ok?'<span class="badge badge-ok">正常</span>':'<span class="badge badge-err">失败</span>')
+        +'</div>'
+        +'<div class="row"><span class="stat">数据条数</span><span class="val">'+p.data.length+'</span></div>'
+        +(p.lastSuccessAt?'<div class="row"><span class="stat">最后成功</span><span class="val">'+new Date(p.lastSuccessAt).toLocaleString('zh-CN')+'</span></div>':'')
+        +(p.error?'<div class="error-msg">'+p.error+'</div>':'')
+        +'</div>';
+    }
+    grid.innerHTML=html;
+    errEl.textContent='';
+    stopWait();
+  }catch(e){
+    errEl.textContent='连接失败: '+e.message+'（可刷新重试）';
+    stopWait();
+    grid.innerHTML='<div class="card err" style="text-align:center;padding:24px"><span style="color:#f87171">获取失败</span><br><span class="stat">'+e.message+'</span></div>';
+  }
+}
+fetchData();setInterval(fetchData,30000);
+</script>
+</body></html>`);
+});
+
+// 全局错误处理
+function isProduction(): boolean {
+  return process.env.NODE_ENV !== "development";
+}
+
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error("[server] 未捕获错误:", err.message);
+  res.status(500).json({
+    code: 500,
+    message: isProduction() ? "服务繁忙，请稍后重试" : err.message,
+  });
+});
+
+export default app;
