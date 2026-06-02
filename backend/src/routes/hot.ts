@@ -157,9 +157,10 @@ export async function fetchPlatformForce(
   return buildResponse(adapter, [], false, false, null, "暂无数据");
 }
 
-/** GET /api/hot/all — 纯缓存返回，不触发远端拉取（确保 Vercel <10s） */
-router.get("/all", (_req, res) => {
+/** GET /api/hot/all — 缓存优先，全空时并发拉取（Vercel 多实例下兜底） */
+router.get("/all", async (_req, res) => {
   const all: Record<string, PlatformResponse> = {};
+  let anyCached = false;
   for (const adapter of Object.values(adapters)) {
     const cacheKey = `hot:${adapter.meta.platformName}`;
     const cached = getCache(cacheKey);
@@ -169,10 +170,28 @@ router.get("/all", (_req, res) => {
         dataState(cached) === "stale",
         new Date(cached.fetchedAt).toISOString()
       );
+      anyCached = true;
     } else {
       all[adapter.meta.platformName] = buildResponse(adapter, [], false, false, null, "暂无数据");
     }
   }
+
+  if (!anyCached) {
+    // Vercel 多实例下可能命中空缓存，用 8s 全线并发拉取兜底
+    const ALL_DEADLINE = 8000;
+    const fetched = await Promise.race([
+      Promise.all(Object.values(adapters).map(fetchPlatformForce)),
+      new Promise<PlatformResponse[] | null>((resolve) =>
+        setTimeout(() => resolve(null), ALL_DEADLINE)
+      ),
+    ]);
+    if (fetched) {
+      for (const r of fetched) {
+        all[r.platform] = r;
+      }
+    }
+  }
+
   res.json(all);
 });
 
