@@ -180,7 +180,7 @@ export default function TrendOverlay({ platform, title, onClose }: TrendOverlayP
           {!data || data.data.length < 2 ? (
             <div className="trend-empty">
               <span className="trend-empty-icon">📊</span>
-              {data && data.data.length === 0 ? "数据积累中，请稍后再试" : "加载中..."}
+              {!data ? "加载中..." : "数据积累中，请稍后再试"}
             </div>
           ) : (
             <canvas ref={canvasRef} />
