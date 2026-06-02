@@ -183,8 +183,8 @@ router.get("/cron", async (_req, res) => {
     return;
   }
   try {
-    await refreshAll();
-    res.json({ ok: true, time: new Date().toISOString() });
+    const results = await refreshAll();
+    res.json({ ok: true, time: new Date().toISOString(), results });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -238,7 +238,7 @@ router.get("/:platform/history", (req, res) => {
 });
 
 /** 刷新所有平台数据到缓存（外部 cron 调用，强制远端拉取） */
-export async function refreshAll(): Promise<void> {
+export async function refreshAll(): Promise<PlatformResponse[]> {
   console.log("[cron] 开始刷新...");
   const results = await Promise.all(
     Object.values(adapters).map(fetchPlatformForce)
@@ -248,6 +248,7 @@ export async function refreshAll(): Promise<void> {
     if (r.success) successCount++;
   }
   console.log(`[cron] 已刷新: ${successCount}/${results.length} 平台成功`);
+  return results;
 }
 
 export default router;
