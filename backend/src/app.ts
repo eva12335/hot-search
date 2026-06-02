@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import hotRouter from "./routes/hot.js";
@@ -8,12 +7,6 @@ import hotRouter from "./routes/hot.js";
 dotenv.config();
 
 const app = express();
-
-// 反向代理后正确识别客户端 IP（Render / Vercel）
-app.set("trust proxy", 1);
-
-// 安全响应头
-app.use(helmet());
 
 // CORS — 允许多个前端来源（逗号分隔环境变量）
 const allowedOrigins = (process.env.CORS_ORIGIN || "https://hot-search-rho.vercel.app")
