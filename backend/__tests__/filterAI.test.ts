@@ -11,8 +11,9 @@ describe("filterAI", () => {
     expect(filterAI([])).toEqual([]);
   });
 
-  it("无关键词匹配 → 空输出", () => {
-    expect(filterAI([item(1, "今天天气真好")])).toEqual([]);
+  it("无关键词匹配 → 返回原始数据兜底", () => {
+    const input = [item(1, "今天天气真好")];
+    expect(filterAI(input)).toEqual(input);
   });
 
   it("英文关键词大小写不敏感匹配", () => {

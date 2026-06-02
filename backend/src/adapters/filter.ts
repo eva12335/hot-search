@@ -43,11 +43,13 @@ const AI_KEYWORDS = [
  * 不区分大小写匹配
  */
 export function filterAI(items: HotItem[]): HotItem[] {
-  return items
+  const filtered = items
     .filter((item) =>
       AI_KEYWORDS.some((kw) =>
         item.title.toLowerCase().includes(kw.toLowerCase())
       )
     )
     .map((item, i) => ({ ...item, rank: i + 1 }));
+  // 过滤为空时返回原始数据兜底，避免平台显示"暂无数据"
+  return filtered.length > 0 ? filtered : items;
 }
