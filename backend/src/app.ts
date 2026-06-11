@@ -9,7 +9,7 @@ dotenv.config();
 const app = express();
 
 // CORS — 允许多个前端来源（逗号分隔环境变量）
-const allowedOrigins = (process.env.CORS_ORIGIN || "https://hot-search-rho.vercel.app")
+const allowedOrigins = (process.env.CORS_ORIGIN || "https://hot-search-rho.vercel.app,https://www.zzxfxy.top")
   .split(",")
   .map(s => s.trim())
   .filter(Boolean);

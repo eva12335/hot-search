@@ -50,6 +50,7 @@ export function filterAI(items: HotItem[]): HotItem[] {
       )
     )
     .map((item, i) => ({ ...item, rank: i + 1 }));
-  // 过滤为空时返回原始数据兜底，避免平台显示"暂无数据"
-  return filtered.length > 0 ? filtered : items;
+  // 过滤为空时直接返回空数组，前端展示"暂无AI相关热搜"
+  // 不再兜底返回原始数据，避免非AI内容污染AI热搜看板
+  return filtered;
 }

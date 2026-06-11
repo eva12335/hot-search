@@ -100,7 +100,8 @@ export async function fetchPlatform(
 
   // 远端拉取
   const primaryData = await withDeadline(() => adapter.fetch(), DEADLINE);
-  if (primaryData && primaryData.length > 0) {
+  // Array.isArray(null) === false → 失败走 fallback；[] 是合法空结果（如 AI 过滤后无内容）
+  if (Array.isArray(primaryData)) {
     const prevEntry = getCache(cacheKey);
     const withDelta = computeDelta(prevEntry?.data, primaryData);
     setCache(cacheKey, withDelta);
@@ -108,7 +109,7 @@ export async function fetchPlatform(
   }
 
   const fallbackData = await withDeadline(() => adapter.fallbackFetch(), DEADLINE);
-  if (fallbackData && fallbackData.length > 0) {
+  if (Array.isArray(fallbackData)) {
     const prevEntry = getCache(cacheKey);
     const withDelta = computeDelta(prevEntry?.data, fallbackData);
     setCache(cacheKey, withDelta);
@@ -133,7 +134,7 @@ export async function fetchPlatformForce(
   const DEADLINE_FALLBACK = 3000;
 
   const primaryData = await withDeadline(() => adapter.fetch(), DEADLINE_PRIMARY);
-  if (primaryData && primaryData.length > 0) {
+  if (Array.isArray(primaryData)) {
     const prevEntry = getCache(cacheKey);
     const withDelta = computeDelta(prevEntry?.data, primaryData);
     setCache(cacheKey, withDelta);
@@ -141,7 +142,7 @@ export async function fetchPlatformForce(
   }
 
   const fallbackData = await withDeadline(() => adapter.fallbackFetch(), DEADLINE_FALLBACK);
-  if (fallbackData && fallbackData.length > 0) {
+  if (Array.isArray(fallbackData)) {
     const prevEntry = getCache(cacheKey);
     const withDelta = computeDelta(prevEntry?.data, fallbackData);
     setCache(cacheKey, withDelta);
